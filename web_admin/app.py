@@ -1861,3 +1861,15 @@ def delete_subcategory(sid):
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
+import os
+from flask import send_from_directory, abort
+
+UPLOAD_DIR = os.getenv('UPLOAD_DIR', os.path.join(os.path.dirname(__file__), 'uploads'))
+
+@app.route('/uploads/<path:filename>')
+def uploaded_file(filename):
+    full = os.path.join(UPLOAD_DIR, filename)
+    if not os.path.isfile(full):
+        abort(404)
+    return send_from_directory(UPLOAD_DIR, filename, conditional=True)
