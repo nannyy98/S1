@@ -23,6 +23,26 @@ def inject_time_helpers():
     from datetime import datetime, timedelta
     return {'now_dt': datetime.utcnow(), 'timedelta': timedelta}
 app = Flask(__name__)
+
+# === Unified uploads config (Render-ready) ===
+UPLOAD_DIR = os.getenv('UPLOAD_DIR', '/data/uploads')
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
+
+# Set defaults safely and ensure directory exists
+app.config.setdefault('UPLOAD_FOLDER', UPLOAD_DIR)
+app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+@app.route('/uploads/<path:filename>')
+def serve_upload(filename):
+    upload_dir = app.config.get('UPLOAD_FOLDER', os.getenv('UPLOAD_DIR', '/data/uploads'))
+    full = os.path.join(upload_dir, filename)
+    if not os.path.isfile(full):
+        abort(404)
+    return send_from_directory(upload_dir, filename, conditional=True)
+
+
 app.context_processor(inject_time_helpers)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your-secret-key-change-in-production')
 
@@ -34,6 +54,16 @@ telegram_bot = TelegramBotIntegration()
 
 
 inventory_manager = InventoryManager(db)
+# Настройки загрузки файлов
+UPLOAD_FOLDER = 'static/uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
+
+app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), UPLOAD_FOLDER)
+app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
+
+# Создаем папку для загрузок
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -368,14 +398,6 @@ def edit_product(product_id):
     categories = db.get_categories()
     subs = db.get_subcategories_by_category(product[5]) if product[5] else []
     return render_template('edit_product.html', product=product, categories=categories or [], subcategories=subs)
-
-@app.route('/uploads/<path:filename>')
-def serve_upload(filename):
-    full = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    if not os.path.isfile(full):
-        abort(404)
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename, conditional=True)
-
 @app.route('/categories')
 @login_required
 def categories():
