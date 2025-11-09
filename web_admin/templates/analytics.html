@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+
+{% block title %}Аналитика - Админ-панель{% endblock %}
+{% block page_title %}Аналитика продаж{% endblock %}
+
+{% block content %}
+<!-- Выбор периода -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="period" class="form-label">
+                    <i class="fas fa-calendar me-1"></i>Период анализа
+                </label>
+                <select class="form-select" id="period" name="period" onchange="this.form.submit()">
+                    <option value="7" {{ 'selected' if period == '7' }}>Последние 7 дней</option>
+                    <option value="30" {{ 'selected' if period == '30' }}>Последние 30 дней</option>
+                    <option value="90" {{ 'selected' if period == '90' }}>Последние 3 месяца</option>
+                    <option value="365" {{ 'selected' if period == '365' }}>Последний год</option>
+                </select>
+            </div>
+            <div class="col-md-8">
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-success btn-sm" onclick="downloadReport()">
+                        <i class="fas fa-download me-1"></i>Скачать отчет
+                    </button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="location.reload()">
+                        <i class="fas fa-sync-alt me-1"></i>Обновить
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Ключевые метрики -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="analytics-metric-card orders-period">
+            <div class="analytics-icon">
+                <i class="fas fa-shopping-cart"></i>
+            </div>
+            <div class="analytics-content">
+                <h2 class="analytics-number">{{ sales_report.sales_data[0][0] if sales_report.sales_data else 0 }}</h2>
+                <p class="analytics-label">Заказов за период</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="analytics-metric-card revenue-period">
+            <div class="analytics-icon">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="analytics-content">
+                <h2 class="analytics-number">${{ "%.0f"|format(sales_report.sales_data[0][1] if sales_report.sales_data else 0) }}</h2>
+                <p class="analytics-label">Общая выручка</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="analytics-metric-card avg-order">
+            <div class="analytics-icon">
+                <i class="fas fa-receipt"></i>
+            </div>
+            <div class="analytics-content">
+                <h2 class="analytics-number">${{ "%.0f"|format(sales_report.sales_data[0][2] if sales_report.sales_data else 0) }}</h2>
+                <p class="analytics-label">Средний чек</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="analytics-metric-card unique-customers">
+            <div class="analytics-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="analytics-content">
+                <h2 class="analytics-number">{{ sales_report.sales_data[0][3] if sales_report.sales_data else 0 }}</h2>
+                <p class="analytics-label">Уникальных клиентов</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- График продаж -->
+    <div class="col-xl-8 col-lg-7">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line me-2"></i>
+                    Динамика продаж
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="salesChart" height="80"></canvas>
+            </div>
+        </div>
+        
+        <!-- График заказов -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    Количество заказов
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="ordersChart" height="80"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Топ товары -->
+    <div class="col-xl-4 col-lg-5">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-trophy me-2"></i>
+                    Топ товары
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for product in sales_report.top_products %}
+                <div class="analytics-product-item">
+                    <div class="analytics-product-rank">
+                        {{ loop.index }}
+                    </div>
+                    <div class="analytics-product-info">
+                        <div class="analytics-product-name">{{ product[0] }}</div>
+                        <div class="analytics-product-stats">
+                            <i class="fas fa-box"></i>{{ product[1] }} шт.
+                            <i class="fas fa-dollar-sign"></i>{{ "%.0f"|format(product[2]) }}
+                        </div>
+                        <div class="analytics-product-progress">
+                            <div class="analytics-progress-fill" data-width="{{ (product[2] / sales_report.top_products[0][2] * 100) if sales_report.top_products else 0 }}"></div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                
+                {% if not sales_report.top_products %}
+                <div class="text-center py-4">
+                    <i class="fas fa-chart-bar fa-2x text-muted mb-2"></i>
+                    <p class="text-muted">Нет данных за выбранный период</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Быстрая статистика -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-tachometer-alt me-2"></i>
+                    Показатели
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="h4 text-primary">{{ period }}</div>
+                        <div class="text-muted small">дней анализа</div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="h4 text-success">
+                            {{ "%.1f"|format((sales_report.sales_data[0][0] / sales_report.sales_data[0][3] * 100) if sales_report.sales_data and sales_report.sales_data[0][3] > 0 else 0) }}%
+                        </div>
+                        <div class="text-muted small">конверсия</div>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="exportToExcel()">
+                        <i class="fas fa-file-excel me-1"></i>
+                        Экспорт в Excel
+                    </button>
+                    <button type="button" class="btn btn-outline-info btn-sm" onclick="sendReport()">
+                        <i class="fas fa-envelope me-1"></i>
+                        Отправить отчет
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// График продаж
+fetch('/api/chart_data?type=sales&period={{ period }}')
+    .then(response => response.json())
+    .then(data => {
+        const ctx = document.getElementById('salesChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Выручка ($)',
+                    data: data.data,
+                    borderColor: '#11998e',
+                    backgroundColor: 'rgba(17, 153, 142, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#11998e',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.05)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    })
+    .catch(error => {
+        console.log('Данные графика недоступны');
+    });
+
+// График заказов
+fetch('/api/chart_data?type=orders&period={{ period }}')
+    .then(response => response.json())
+    .then(data => {
+        const ctx = document.getElementById('ordersChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Заказы',
+                    data: data.data,
+                    backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                    borderColor: '#667eea',
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.05)'
+                        },
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    })
+    .catch(error => {
+        console.log('Данные графика недоступны');
+    });
+
+function refreshAnalytics() {
+    const button = event.target;
+    showLoading(button);
+    setTimeout(() => {
+        location.reload();
+    }, 1000);
+}
+
+function downloadReport() {
+    const period = document.getElementById('period').value;
+    window.open(`/export_analytics?period=${period}`, '_blank');
+}
+
+function exportToExcel() {
+    const period = document.getElementById('period').value;
+    window.location.href = `/export_analytics?period=${period}`;
+}
+
+function sendReport() {
+    alert('Отчет успешно сохранен! Используйте функцию "Скачать CSV" для получения файла.');
+}
+</script>
+{% endblock %}

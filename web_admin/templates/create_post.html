@@ -1,0 +1,444 @@
+{% extends "base.html" %}
+
+{% block title %}Создать пост - Админ-панель{% endblock %}
+{% block page_title %}Создание автоматического поста{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-plus me-2"></i>
+                    Новый автоматический пост
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-4">
+                        <label for="title" class="form-label">
+                            <i class="fas fa-heading me-1"></i>
+                            Заголовок поста *
+                        </label>
+                        <input type="text" class="form-control" id="title" name="title" 
+                               placeholder="Например: Доброе утро!" 
+                               value="{{ request.args.get('template_title', '') }}" required>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="content" class="form-label">
+                            <i class="fas fa-align-left me-1"></i>
+                            Текст поста *
+                        </label>
+                        <textarea class="form-control" id="content" name="content" rows="6" 
+                                  placeholder="Введите текст поста..." required>{{ request.args.get('template_content', '') }}</textarea>
+                        <div class="form-text">
+                            Поддерживается HTML разметка: <b>жирный</b>, <i>курсив</i>, эмодзи 😊
+                        </div>
+                    </div>
+                    
+                    <!-- Изображение для поста -->
+                    <div class="mb-4">
+                        <label class="form-label">
+                            <i class="fas fa-image me-1"></i>
+                            Изображение для поста
+                        </label>
+                        
+                        <ul class="nav nav-tabs" id="imageTab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="url-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#url-pane" type="button" role="tab">
+                                    <i class="fas fa-link me-1"></i>URL изображения
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="upload-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#upload-pane" type="button" role="tab">
+                                    <i class="fas fa-upload me-1"></i>Загрузить файл
+                                </button>
+                            </li>
+                        </ul>
+                        
+                        <div class="tab-content border border-top-0 p-3">
+                            <div class="tab-pane fade show active" id="url-pane" role="tabpanel">
+                                <input type="url" class="form-control" id="image_url" name="image_url" 
+                                       placeholder="https://images.pexels.com/photos/..." 
+                                       onchange="previewUrlImage(this)">
+                                <div class="form-text">
+                                    Рекомендуется использовать изображения с Pexels или других источников
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="upload-pane" role="tabpanel">
+                                <input type="file" class="form-control" id="image_file" name="image_file" 
+                                       accept="image/*" onchange="previewUploadedImage(this)">
+                                <div class="form-text">
+                                    Поддерживаемые форматы: JPG, PNG, GIF, WebP (макс. 16MB)
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Предпросмотр изображения -->
+                        <div id="image-preview" class="mt-3" style="display: none;">
+                            <img id="preview-img" class="post-preview-image" alt="Предпросмотр изображения">
+                        </div>
+                    </div>
+                    
+                    <!-- Время отправки -->
+                    <div class="mb-4">
+                        <label class="form-label">
+                            <i class="fas fa-clock me-1"></i>
+                            Время отправки
+                        </label>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-sun text-warning fa-2x mb-2"></i>
+                                        <h6>Утром</h6>
+                                        <div class="form-check form-switch d-flex justify-content-center">
+                                            <input class="form-check-input" type="checkbox" id="morning_enabled" 
+                                                   name="morning_enabled" onchange="toggleTimeSelection('morning')">
+                                        </div>
+                                        <select class="form-select form-select-sm mt-2" id="morning_time" name="morning_time" disabled>
+                                            <option value="07:00">07:00</option>
+                                            <option value="08:00">08:00</option>
+                                            <option value="09:00" selected>09:00</option>
+                                            <option value="10:00">10:00</option>
+                                            <option value="11:00">11:00</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-sun text-info fa-2x mb-2"></i>
+                                        <h6>Днем</h6>
+                                        <div class="form-check form-switch d-flex justify-content-center">
+                                            <input class="form-check-input" type="checkbox" id="afternoon_enabled" 
+                                                   name="afternoon_enabled" onchange="toggleTimeSelection('afternoon')">
+                                        </div>
+                                        <select class="form-select form-select-sm mt-2" id="afternoon_time" name="afternoon_time" disabled>
+                                            <option value="12:00">12:00</option>
+                                            <option value="13:00">13:00</option>
+                                            <option value="14:00" selected>14:00</option>
+                                            <option value="15:00">15:00</option>
+                                            <option value="16:00">16:00</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-moon text-primary fa-2x mb-2"></i>
+                                        <h6>Вечером</h6>
+                                        <div class="form-check form-switch d-flex justify-content-center">
+                                            <input class="form-check-input" type="checkbox" id="evening_enabled" 
+                                                   name="evening_enabled" onchange="toggleTimeSelection('evening')">
+                                        </div>
+                                        <select class="form-select form-select-sm mt-2" id="evening_time" name="evening_time" disabled>
+                                            <option value="17:00">17:00</option>
+                                            <option value="18:00">18:00</option>
+                                            <option value="19:00" selected>19:00</option>
+                                            <option value="20:00">20:00</option>
+                                            <option value="21:00">21:00</option>
+                                            <option value="22:00">22:00</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="target_audience" class="form-label">
+                            <i class="fas fa-users me-1"></i>
+                            Целевая аудитория
+                        </label>
+                        <select class="form-select" id="target_audience" name="target_audience">
+                            <option value="channel">📢 Канал (публичная лента)</option>
+                            <option value="all">👥 Все клиенты</option>
+                            <option value="active">🔥 Активные клиенты (покупали за месяц)</option>
+                            <option value="vip">💎 VIP клиенты (потратили $500+)</option>
+                            <option value="new">🆕 Новые клиенты (зарегистрированы за неделю)</option>
+                        </select>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            <strong>Канал:</strong> -1002566537425 (публичные посты)
+                            <br><strong>Автоматически добавляются:</strong> кнопки заказа, ссылка на сайт, отзывы товаров
+                        </div>
+                    </div>
+                    
+                    <!-- Настройки кнопок -->
+                    <div class="mb-4">
+                        <label class="form-label">
+                            <i class="fas fa-mouse-pointer me-1"></i>
+                            Кнопки под постом
+                        </label>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="bot_username" class="form-label">Username бота</label>
+                                <input type="text" class="form-control" id="bot_username" name="bot_username" 
+                                       placeholder="Safar_call_bot" value="Safar_call_bot">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="website_url" class="form-label">Ссылка на сайт</label>
+                                <input type="url" class="form-control" id="website_url" name="website_url" 
+                                       placeholder="https://your-website.com" value="https://your-website.com">
+                            </div>
+                        </div>
+                        
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="include_reviews" name="include_reviews" checked>
+                            <label class="form-check-label" for="include_reviews">
+                                Добавить отзывы о популярных товарах
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save me-2"></i>
+                            Создать пост
+                        </button>
+                        <a href="{{ url_for('scheduled_posts') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Отмена
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Предпросмотр -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-eye me-2"></i>
+                    Предпросмотр
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="border rounded p-3" style="background-color: #f8f9fa;">
+                    <div id="preview-content">
+                        <div class="text-muted text-center">
+                            <i class="fas fa-mobile-alt fa-2x mb-2"></i>
+                            <p>Введите текст для предпросмотра</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <h6>Расписание отправки:</h6>
+                    <div id="schedule-preview">
+                        <small class="text-muted">Включите время для предпросмотра</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Быстрые шаблоны -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-magic me-1"></i>
+                    Быстрые шаблоны
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="fillTemplate('morning')">
+                        🌅 Утреннее приветствие
+                    </button>
+                    <button type="button" class="btn btn-outline-warning btn-sm" onclick="fillTemplate('promotion')">
+                        🎁 Акция дня
+                    </button>
+                    <button type="button" class="btn btn-outline-info btn-sm" onclick="fillTemplate('evening')">
+                        🌙 Вечерние рекомендации
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm" onclick="fillTemplate('new_product')">
+                        🆕 Новинка в каталоге
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Переключение времени
+function toggleTimeSelection(period) {
+    const checkbox = document.getElementById(`${period}_enabled`);
+    const select = document.getElementById(`${period}_time`);
+    
+    select.disabled = !checkbox.checked;
+    if (!checkbox.checked) {
+        select.value = '';
+    }
+    
+    updateSchedulePreview();
+}
+
+// Предпросмотр загруженного изображения
+function previewUploadedImage(input) {
+    const file = input.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('preview-img').src = e.target.result;
+            document.getElementById('image-preview').style.display = 'block';
+            updatePreview();
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+// Предпросмотр изображения по URL
+function previewUrlImage(input) {
+    const url = input.value;
+    if (url) {
+        document.getElementById('preview-img').src = url;
+        document.getElementById('image-preview').style.display = 'block';
+        updatePreview();
+    } else {
+        document.getElementById('image-preview').style.display = 'none';
+        updatePreview();
+    }
+}
+
+// Предпросмотр поста
+function updatePreview() {
+    const title = document.getElementById('title').value;
+    const content = document.getElementById('content').value;
+    const imageUrl = document.getElementById('image_url').value || 
+                    (document.getElementById('preview-img').src !== window.location.href ? 
+                     document.getElementById('preview-img').src : '');
+    const previewDiv = document.getElementById('preview-content');
+    
+    if (title || content || imageUrl) {
+        let preview = '<div class="telegram-message">';
+        
+        if (imageUrl) {
+            preview += `<img src="${imageUrl}" alt="Изображение поста" class="img-fluid rounded mb-2" style="max-height: 200px; width: 100%; object-fit: cover;">`;
+        }
+        
+        if (title) {
+            preview += `<div class="fw-bold mb-2">📢 <b>${title}</b></div>`;
+        }
+        if (content) {
+            preview += `<div class="mb-2">${content.replace(/\n/g, '<br>')}</div>`;
+        }
+        preview += '<div class="mt-2 small text-muted">🛍 Перейти в каталог: /start</div>';
+        preview += '</div>';
+        
+        previewDiv.innerHTML = preview;
+    } else {
+        previewDiv.innerHTML = '<div class="text-muted text-center"><i class="fas fa-mobile-alt fa-2x mb-2"></i><p>Введите данные для предпросмотра</p></div>';
+    }
+}
+
+// Предпросмотр расписания
+function updateSchedulePreview() {
+    const scheduleDiv = document.getElementById('schedule-preview');
+    let schedule = '';
+    
+    if (document.getElementById('morning_enabled').checked) {
+        const time = document.getElementById('morning_time').value;
+        schedule += `<div class="mb-1"><i class="fas fa-sun text-warning me-1"></i> Утром в ${time}</div>`;
+    }
+    if (document.getElementById('afternoon_enabled').checked) {
+        const time = document.getElementById('afternoon_time').value;
+        schedule += `<div class="mb-1"><i class="fas fa-sun text-info me-1"></i> Днем в ${time}</div>`;
+    }
+    if (document.getElementById('evening_enabled').checked) {
+        const time = document.getElementById('evening_time').value;
+        schedule += `<div class="mb-1"><i class="fas fa-moon text-primary me-1"></i> Вечером в ${time}</div>`;
+    }
+    
+    if (schedule) {
+        scheduleDiv.innerHTML = schedule;
+    } else {
+        scheduleDiv.innerHTML = '<small class="text-muted">Включите время для предпросмотра</small>';
+    }
+}
+
+// Шаблоны постов
+function fillTemplate(type) {
+    const templates = {
+        'morning': {
+            title: 'Доброе утро!',
+            content: '🌅 Доброе утро, дорогие покупатели!\n\nНачните день с выгодных покупок в нашем магазине!\n\n🛍 Новинки и акции ждут вас!',
+            image: 'https://images.pexels.com/photos/1002703/pexels-photo-1002703.jpeg'
+        },
+        'promotion': {
+            title: 'Горячая акция!',
+            content: '🔥 ГОРЯЧАЯ АКЦИЯ ДНЯ!\n\n🎁 Скидки до 50% на популярные товары!\n⏰ Только до конца дня!\n\n💰 Не упустите возможность!',
+            image: 'https://images.pexels.com/photos/1303081/pexels-photo-1303081.jpeg'
+        },
+        'evening': {
+            title: 'Вечерние рекомендации',
+            content: '🌆 Добрый вечер!\n\n💡 Специально для вас подобрали интересные товары!\n\n🛒 Оформите заказ сегодня и получите бесплатную доставку!',
+            image: 'https://images.pexels.com/photos/230544/pexels-photo-230544.jpeg'
+        },
+        'new_product': {
+            title: 'Новинка в каталоге!',
+            content: '🆕 НОВИНКА В НАШЕМ КАТАЛОГЕ!\n\n✨ Встречайте новый товар!\n💎 Высокое качество по доступной цене!\n\n🛍 Заказывайте первыми!',
+            image: 'https://images.pexels.com/photos/1464625/pexels-photo-1464625.jpeg'
+        }
+    };
+    
+    const template = templates[type];
+    if (template) {
+        document.getElementById('title').value = template.title;
+        document.getElementById('content').value = template.content;
+        document.getElementById('image_url').value = template.image;
+        
+        // Переключаемся на вкладку URL и показываем предпросмотр
+        document.getElementById('url-tab').click();
+        previewUrlImage(document.getElementById('image_url'));
+        
+        updatePreview();
+    }
+}
+
+// Обновляем предпросмотр при изменении полей
+document.getElementById('title').addEventListener('input', updatePreview);
+document.getElementById('content').addEventListener('input', updatePreview);
+
+// Инициализируем предпросмотр
+updatePreview();
+updateSchedulePreview();
+</script>
+
+<style>
+.telegram-message {
+    background: white;
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.card {
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.form-check-input:checked {
+    background-color: #667eea;
+    border-color: #667eea;
+}
+</style>
+{% endblock %}

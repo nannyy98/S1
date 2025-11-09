@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}Автоматические посты - Админ-панель{% endblock %}
+{% block page_title %}Автоматические посты{% endblock %}
+
+{% block content %}
+<!-- Быстрые действия -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clock me-2"></i>
+                        Управление автоматическими постами
+                    </h5>
+                    <a href="{{ url_for('create_post') }}" class="btn btn-success">
+                        <i class="fas fa-plus me-2"></i>
+                        Создать новый пост
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Список постов -->
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>
+                    Запланированные посты ({{ posts|length }})
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if posts %}
+                    {% for post in posts %}
+                    <div class="card mb-3 {{ 'border-success' if post[7] else 'border-secondary' }}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h6 class="card-title">
+                                        {% if post[7] %}
+                                            <i class="fas fa-play-circle text-success me-2"></i>
+                                        {% else %}
+                                            <i class="fas fa-pause-circle text-secondary me-2"></i>
+                                        {% endif %}
+                                        {{ post[1] }}
+                                    </h6>
+                                    <p class="card-text text-muted">{{ post[2][:100] }}{% if post[2]|length > 100 %}...{% endif %}</p>
+                                    
+                                    {% if post|length > 11 and post[11] %}
+                                    <div class="mb-2">
+                                        <img src="{{ post[11] }}" alt="Изображение поста" 
+                                             class="img-thumbnail" style="max-height: 60px; max-width: 100px;">
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <div class="row mt-3">
+                                        <div class="col-md-4">
+                                            <small class="text-muted">
+                                                <i class="fas fa-sun me-1"></i>Утром: 
+                                                <strong>{{ post[3] or 'Не установлено' }}</strong>
+                                            </small>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <small class="text-muted">
+                                                <i class="fas fa-sun me-1"></i>Днем: 
+                                                <strong>{{ post[4] or 'Не установлено' }}</strong>
+                                            </small>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <small class="text-muted">
+                                                <i class="fas fa-moon me-1"></i>Вечером: 
+                                                <strong>{{ post[5] or 'Не установлено' }}</strong>
+                                            </small>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-2">
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-users me-1"></i>
+                                            {% if post[6] == 'channel' %}📢 Канал
+                                            {% elif post[6] == 'all' %}Все клиенты
+                                            {% elif post[6] == 'active' %}Активные клиенты
+                                            {% elif post[6] == 'vip' %}VIP клиенты
+                                            {% elif post[6] == 'new' %}Новые клиенты
+                                            {% endif %}
+                                        </span>
+                                        <span class="badge bg-{{ 'success' if post[7] else 'secondary' }}">
+                                            {{ 'Активен' if post[7] else 'Выключен' }}
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div class="btn-group-vertical">
+                                    <a href="{{ url_for('edit_post', post_id=post[0]) }}" 
+                                       class="btn btn-outline-primary btn-sm mb-1">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    
+                                    <form method="POST" action="{{ url_for('send_now_post') }}" style="display: inline;">
+                                        <input type="hidden" name="post_id" value="{{ post[0] }}">
+                                        <button type="submit" class="btn btn-outline-success btn-sm mb-1" 
+                                                title="Отправить немедленно" 
+                                                onclick="return confirm('Отправить этот пост прямо сейчас?')">
+                                            <i class="fas fa-paper-plane"></i>
+                                        </button>
+                                    </form>
+                                    
+                                    <form method="POST" action="{{ url_for('toggle_post_status') }}" style="display: inline;">
+                                        <input type="hidden" name="post_id" value="{{ post[0] }}">
+                                        <input type="hidden" name="current_status" value="{{ post[7] }}">
+                                        <button type="submit" class="btn btn-outline-{{ 'warning' if post[7] else 'success' }} btn-sm mb-1" 
+                                                title="{{ 'Выключить' if post[7] else 'Включить' }}">
+                                            <i class="fas fa-{{ 'pause' if post[7] else 'play' }}"></i>
+                                        </button>
+                                    </form>
+                                    
+                                    <form method="POST" action="{{ url_for('delete_post') }}" style="display: inline;">
+                                        <input type="hidden" name="post_id" value="{{ post[0] }}">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm" 
+                                                onclick="return confirm('Удалить этот автоматический пост?')" title="Удалить">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Нет автоматических постов</h5>
+                        <p class="text-muted">Создайте первый пост для автоматической рассылки</p>
+                        <a href="{{ url_for('create_post') }}" class="btn btn-success">
+                            <i class="fas fa-plus me-2"></i>
+                            Создать пост
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Статистика -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    Статистика за 7 дней
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if stats %}
+                    {% for stat in stats %}
+                    <div class="post-stat-item">
+                        <div class="post-stat-info">
+                            <div class="post-stat-title">{{ stat[0] }}</div>
+                            <small class="post-stat-time">
+                                {% if stat[1] == 'morning' %}🌅 Утром
+                                {% elif stat[1] == 'afternoon' %}☀️ Днем
+                                {% elif stat[1] == 'evening' %}🌆 Вечером
+                                {% endif %}
+                            </small>
+                        </div>
+                        <div class="post-stat-numbers">
+                            <div class="post-stat-sent">{{ stat[2] }}</div>
+                            <small class="post-stat-sent-label">отправлено</small>
+                            {% if stat[3] > 0 %}
+                                <div class="post-stat-errors">{{ stat[3] }} ошибок</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-chart-bar fa-2x text-muted mb-2"></i>
+                        <p class="text-muted">Нет статистики</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Быстрые шаблоны -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-magic me-2"></i>
+                    Быстрые шаблоны
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="createTemplate('morning')">
+                        <i class="fas fa-sun me-1"></i>
+                        Утреннее приветствие
+                    </button>
+                    <button type="button" class="btn btn-outline-warning btn-sm" onclick="createTemplate('promotion')">
+                        <i class="fas fa-gift me-1"></i>
+                        Акция дня
+                    </button>
+                    <button type="button" class="btn btn-outline-info btn-sm" onclick="createTemplate('evening')">
+                        <i class="fas fa-moon me-1"></i>
+                        Вечерние рекомендации
+                    </button>
+                    <form method="POST" action="{{ url_for('test_channel_post') }}" style="display: inline;">
+                        <button type="submit" class="btn btn-outline-success btn-sm w-100 mt-2">
+                            <i class="fas fa-paper-plane me-1"></i>
+                            Тест канала
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function createTemplate(type) {
+    const templates = {
+        'morning': {
+            title: 'Доброе утро!',
+            content: '🌅 Доброе утро! Начните день с выгодных покупок!\n\n🛍 Новинки в каталоге ждут вас!\n💰 Специальные цены только сегодня!'
+        },
+        'promotion': {
+            title: 'Акция дня!',
+            content: '🔥 Горячая акция дня!\n\n🎁 Скидки до 50% на популярные товары!\n⏰ Только до конца дня!'
+        },
+        'evening': {
+            title: 'Вечерние рекомендации',
+            content: '🌆 Добрый вечер!\n\n💡 Специально для вас подобрали интересные товары!\n🛒 Оформите заказ сегодня и получите бесплатную доставку!'
+        }
+    };
+    
+    const template = templates[type];
+    if (template) {
+        const url = new URL('{{ url_for("create_post") }}', window.location.origin);
+        url.searchParams.set('template_title', template.title);
+        url.searchParams.set('template_content', template.content);
+        window.location.href = url.toString();
+    }
+}
+</script>
+{% endblock %}

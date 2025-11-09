@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}Заказы - Админ-панель{% endblock %}
+{% block page_title %}Управление заказами{% endblock %}
+
+{% block content %}
+<!-- Фильтры -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label for="status" class="form-label">
+                    <i class="fas fa-filter me-1"></i>Статус заказа
+                </label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">Все статусы</option>
+                    <option value="pending" {{ 'selected' if status_filter == 'pending' }}>⏳ В обработке</option>
+                    <option value="confirmed" {{ 'selected' if status_filter == 'confirmed' }}>✅ Подтвержден</option>
+                    <option value="shipped" {{ 'selected' if status_filter == 'shipped' }}>🚚 Отправлен</option>
+                    <option value="delivered" {{ 'selected' if status_filter == 'delivered' }}>📦 Доставлен</option>
+                    <option value="cancelled" {{ 'selected' if status_filter == 'cancelled' }}>❌ Отменен</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label for="search" class="form-label">
+                    <i class="fas fa-search me-1"></i>Поиск заказов
+                </label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       placeholder="Номер заказа или имя клиента" value="{{ search }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-2"></i>Найти
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Таблица заказов -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="fas fa-shopping-cart me-2"></i>
+            Заказы ({{ orders|length }})
+        </h5>
+        <div class="btn-group">
+            <a href="{{ url_for('export_orders') }}" class="btn btn-outline-success btn-sm">
+                <i class="fas fa-download me-1"></i>
+                Экспорт Excel
+            </a>
+            <button type="button" class="btn btn-outline-primary btn-sm" onclick="location.reload()">
+                <i class="fas fa-sync-alt me-1"></i>
+                Обновить
+            </button>
+        </div>
+    </div>
+    
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Заказ</th>
+                        <th>Клиент</th>
+                        <th>Контакты</th>
+                        <th>Сумма</th>
+                        <th>Статус</th>
+                        <th>Оплата</th>
+                        <th>Дата</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td>
+                            <div class="fw-bold text-primary">#{{ order[0] }}</div>
+                        </td>
+                        <td>
+                            <div class="fw-bold">{{ order[4] }}</div>
+                            {% if order[8] %}
+                                <small class="text-muted">{{ order[8][:40] }}...</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if order[6] %}
+    <div class="mb-1">
+        <i class="fas fa-phone me-1 text-success"></i>
+        <small>{{ order[6] }}</small>
+    </div>
+{% endif %}
+{% if order[5] %}
+    <div>
+        <i class="fas fa-id-badge me-1 text-primary"></i>
+        <small>Telegram ID: {{ order[5] }}</small>
+    </div>
+{% endif %}
+
+                            {% if order[6] %}
+                                <div>
+                                    <i class="fas fa-envelope me-1 text-info"></i>
+                                    <small>{{ order[6] }}</small>
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="fw-bold text-success h5 mb-0">${{ "%.2f"|format(order[1]) }}</div>
+                        </td>
+                        <td>
+                            <span class="status-badge status-{{ order[2] }}">
+                                {% if order[2] == 'pending' %}В обработке
+                                {% elif order[2] == 'confirmed' %}Подтвержден
+                                {% elif order[2] == 'shipped' %}Отправлен
+                                {% elif order[2] == 'delivered' %}Доставлен
+                                {% elif order[2] == 'cancelled' %}Отменен
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            {% if order[8] == 'online' %}
+                                <span class="badge bg-primary">
+                                    <i class="fas fa-credit-card me-1"></i>Онлайн
+                                </span>
+                            {% else %}
+                                <span class="badge bg-warning">
+                                    <i class="fas fa-money-bill me-1"></i>Наличные
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small class="text-muted">{{ order[3][:10] }}</small>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('order_detail', order_id=order[0]) }}" 
+                                   class="btn btn-outline-primary" title="Подробнее">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if order[2] == 'pending' %}
+                                <button type="button" class="btn btn-outline-success" 
+                                        onclick="updateOrderStatus({{ order[0] }}, 'confirmed')" title="Подтвердить">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                {% endif %}
+                                {% if order[2] == 'confirmed' %}
+                                <button type="button" class="btn btn-outline-info" 
+                                        onclick="updateOrderStatus({{ order[0] }}, 'shipped')" title="Отправить">
+                                    <i class="fas fa-shipping-fast"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if not orders %}
+        <div class="text-center py-5">
+            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">Заказов не найдено</h5>
+            <p class="text-muted">Попробуйте изменить фильтры поиска</p>
+        </div>
+        {% endif %}
+        
+        <!-- Пагинация -->
+        {% if total_pages > 1 %}
+        <div class="d-flex justify-content-center mt-4">
+            <nav aria-label="Пагинация заказов">
+                <ul class="pagination">
+                    {% if current_page > 1 %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ current_page - 1 }}&status={{ status_filter }}&search={{ search }}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for page_num in range(1, total_pages + 1) %}
+                        {% if page_num == current_page %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                        {% elif page_num <= current_page + 2 and page_num >= current_page - 2 %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_num }}&status={{ status_filter }}&search={{ search }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if current_page < total_pages %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ current_page + 1 }}&status={{ status_filter }}&search={{ search }}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updateOrderStatus(orderId, status) {
+    const statusNames = {
+        'confirmed': 'подтвердить',
+        'shipped': 'отправить',
+        'delivered': 'отметить доставленным',
+        'cancelled': 'отменить'
+    };
+    
+    const actionName = statusNames[status] || 'изменить статус';
+    
+    if (confirm(`Вы уверены, что хотите ${actionName} заказ #${orderId}?`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/update_order_status';
+        
+        const orderIdInput = document.createElement('input');
+        orderIdInput.type = 'hidden';
+        orderIdInput.name = 'order_id';
+        orderIdInput.value = orderId;
+        
+        const statusInput = document.createElement('input');
+        statusInput.type = 'hidden';
+        statusInput.name = 'status';
+        statusInput.value = status;
+        
+        form.appendChild(orderIdInput);
+        form.appendChild(statusInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

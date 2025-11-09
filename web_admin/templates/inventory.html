@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}Склад - Админ-панель
+
+{% endblock %}
+{% block page_title %}Управление складом
+{% endblock %}
+
+{% block content %}
+<!-- Сводка по складу -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="inventory-stat-card total-products">
+            <div class="stat-icon">
+                <i class="fas fa-boxes"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-label">Всего товаров</div>
+                <div class="stat-value">{{ inventory_summary.total_products }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="inventory-stat-card total-units">
+            <div class="stat-icon">
+                <i class="fas fa-cubes"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-label">Единиц на складе</div>
+                <div class="stat-value">{{ inventory_summary.total_units }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="inventory-stat-card total-value">
+            <div class="stat-icon">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-label">Стоимость запасов</div>
+                <div class="stat-value">${{ "%.2f"|format(inventory_summary.total_value) }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="inventory-stat-card attention-needed">
+            <div class="stat-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-label">Требуют внимания</div>
+                <div class="stat-value">{{ low_stock.low|length + low_stock.critical|length }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Товары с низким остатком -->
+    <div class="col-lg-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
+                    Низкие остатки
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if low_stock.critical %}
+                <h6 class="text-danger">🔴 Критический остаток (0 шт.):</h6>
+                {% for product in low_stock.critical %}
+                <div class="alert alert-danger d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ product[2] }}</strong>
+                        <br><small>ID: {{ product[2] }}</small>
+                    </div>
+                    <div>
+                        <form method="post" action="{{ url_for('inventory_replenish') }}" class="d-inline-flex">
+  <input type="hidden" name="product_id" value="{{ product[2] }}">
+  <input type="number" name="quantity" class="form-control form-control-sm me-2" min="1" value="10" style="width: 90px;">
+  <div class="d-flex align-items-center gap-2"><a class="btn btn-sm btn-outline-primary" title="Редактировать" href="{{ url_for('edit_product', product_id=product[0]) }}"><i class="fas fa-edit"></i></a><form method="POST" action="{{ url_for('inventory_restock') }}" class="d-inline-flex"><input type="hidden" name="product_id" value="{{ product[2] }}"><input type="number" name="quantity_add" class="form-control form-control-sm me-2" placeholder="+шт" min="1" style="width:80px;"><input type="number" step="0.01" name="cost_per_unit" class="form-control form-control-sm me-2" placeholder="себестоим" style="width:100px;"><input type="hidden" name="reason" value="Пополнение (ручное)"><button type="submit" class="btn btn-sm btn-warning"><i class="fas fa-plus me-1"></i>Пополнить</button></form></div>
+                    </div>
+                </div>
+                {% endfor %}
+                {% endif %}
+                
+                {% if low_stock.low %}
+                <h6 class="text-warning mt-3">🟡 Низкий остаток (≤5 шт.):</h6>
+                {% for product in low_stock.low %}
+                <div class="alert alert-warning d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ product[2] }}</strong>
+                        <br><small>Остаток: {{ product[2] }} шт.</small>
+                    </div>
+                    <div>
+                        <form method="post" action="{{ url_for('inventory_replenish') }}" class="d-inline-flex">
+  <input type="hidden" name="product_id" value="{{ product[2] }}">
+  <input type="number" name="quantity" class="form-control form-control-sm me-2" min="1" value="5" style="width: 90px;">
+  <div class="d-flex align-items-center gap-2"><a class="btn btn-sm btn-outline-primary" title="Редактировать" href="{{ url_for('edit_product', product_id=product[0]) }}"><i class="fas fa-edit"></i></a><form method="POST" action="{{ url_for('inventory_restock') }}" class="d-inline-flex"><input type="hidden" name="product_id" value="{{ product[2] }}"><input type="number" name="quantity_add" class="form-control form-control-sm me-2" placeholder="+шт" min="1" style="width:80px;"><input type="number" step="0.01" name="cost_per_unit" class="form-control form-control-sm me-2" placeholder="себестоим" style="width:100px;"><input type="hidden" name="reason" value="Пополнение (ручное)"><button type="submit" class="btn btn-sm btn-warning"><i class="fas fa-plus me-1"></i>Пополнить</button></form></div>
+                    </div>
+                </div>
+                {% endfor %}
+                {% endif %}
+                
+                {% if not low_stock.critical and not low_stock.low %}
+                <div class="text-center text-success">
+                    <i class="fas fa-check-circle fa-3x mb-3"></i>
+                    <h5>Все товары в наличии!</h5>
+                    <p class="text-muted">Нет товаров с критически низким остатком</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- ABC анализ -->
+    <div class="col-lg-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    ABC анализ склада
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for category, products in abc_analysis.categories.items() %}
+                {% if products %}
+                {% set category_value = products|sum(attribute='inventory_value') %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-1">
+                            Категория {{ category }}
+                            {% if category == 'A' %}
+                                <span class="badge bg-success">Высокая ценность</span>
+                            {% elif category == 'B' %}
+                                <span class="badge bg-warning">Средняя ценность</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Низкая ценность</span>
+                            {% endif %}
+                        </h6>
+                        <span class="fw-bold">${{ "%.2f"|format(category_value) }}</span>
+                    </div>
+                    <div class="progress mb-2" style="height: 10px;">
+                        <div class="progress-bar bg-{{ 'success' if category == 'A' else 'warning' if category == 'B' else 'secondary' }}" 
+                             role="progressbar" 
+                             style="width: {{ (category_value / abc_analysis.total_value * 100) if abc_analysis.total_value > 0 else 0 }}%">
+                        </div>
+                    </div>
+                    <small class="text-muted">
+                        {{ products|length }} товаров • 
+                        {{ "%.1f"|format((category_value / abc_analysis.total_value * 100) if abc_analysis.total_value > 0 else 0) }}% от общей стоимости
+                    </small>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Топ товары по стоимости запасов -->
+{% if inventory_summary.top_value_products %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-gem me-2"></i>
+            Топ товары по стоимости запасов
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Рейтинг</th>
+                        <th>Товар</th>
+                        <th>Остаток</th>
+                        <th>Цена</th>
+                        <th>Стоимость запасов</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in inventory_summary.top_value_products %}
+                    <tr>
+                        <td>
+                            <div class="ranking-badge">
+                                {{ loop.index }}
+                            </div>
+                        </td>
+                        <td><strong>{{ product[1] }}</strong></td>
+                        <td>
+                            {% if product[2] <= 5 %}
+                                <span class="badge bg-warning">{{ product[2] }} шт.</span>
+                            {% else %}
+                                <span class="badge bg-success">{{ product[2] }} шт.</span>
+                            {% endif %}
+                        </td>
+                        <td>${{ "%.2f"|format(product[3]) }}</td>
+                        <td><strong>${{ "%.2f"|format(product[4]) }}</strong></td>
+                        <td>
+                            <div class="table-actions">
+                                <a class="btn btn-outline-primary" title="Редактировать" href="{{ url_for('edit_product', product_id=product[0]) }}">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('inventory_restock') }}" class="d-inline">
+  <input type="hidden" name="product_id" value="{{ product[0] }}">
+  <input type="hidden" name="quantity_add" value="1">
+  <input type="hidden" name="reason" value="Быстрое пополнение (1 шт)">
+  <button type="submit" class="btn btn-outline-success" title="Пополнить">
+    <i class="fas fa-plus"></i>
+  </button>
+</form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<hr>
+<h5 class="mt-4">Быстрая корректировка остатка</h5>
+
+
+
+<style>
+.table-actions{display:flex;gap:.5rem;align-items:center;}
+.btn-square{width:32px;height:32px;padding:0;display:inline-flex;justify-content:center;align-items:center;border-radius:.5rem;}
+.ranking-badge{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#f1f3f5;font-weight:600;color:#495057;}
+.badge.bg-success,.badge.bg-warning{font-weight:600;}
+</style>
+
+<div class="card mt-4">
+  <div class="card-header fw-semibold">Быстрая корректировка остатка</div>
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('inventory_update_v2') }}" class="row g-3 align-items-end">
+      <div class="col-sm-3">
+        <label class="form-label">ID товара</label>
+        <input type="number" class="form-control" name="product_id" min="1" required>
+      </div>
+      <div class="col-sm-3">
+        <label class="form-label">Новый остаток</label>
+        <input type="number" class="form-control" name="new_stock" min="0" required>
+      </div>
+      <div class="col-sm-4">
+        <label class="form-label">Причина (опционально)</label>
+        <input type="text" class="form-control" name="reason" placeholder="Корректировка">
+      </div>
+      <div class="col-sm-2">
+        <button class="btn btn-primary w-100" type="submit">Обновить</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+
+{% block title %}Редактировать пост - Админ-панель{% endblock %}
+{% block page_title %}Редактирование поста{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-edit me-2"></i>
+                    Редактирование: "{{ post[1] }}"
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-4">
+                        <label for="title" class="form-label">
+                            <i class="fas fa-heading me-1"></i>
+                            Заголовок поста *
+                        </label>
+                        <input type="text" class="form-control" id="title" name="title" 
+                               value="{{ post[1] }}" required>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="content" class="form-label">
+                            <i class="fas fa-align-left me-1"></i>
+                            Текст поста *
+                        </label>
+                        <textarea class="form-control" id="content" name="content" rows="6" required>{{ post[2] }}</textarea>
+                    </div>
+                    
+                    <!-- Изображение для поста -->
+                    <div class="mb-4">
+                        <label class="form-label">
+                            <i class="fas fa-image me-1"></i>
+                            Изображение для поста
+                        </label>
+                        
+                        <ul class="nav nav-tabs" id="imageTab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="url-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#url-pane" type="button" role="tab">
+                                    <i class="fas fa-link me-1"></i>URL изображения
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="upload-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#upload-pane" type="button" role="tab">
+                                    <i class="fas fa-upload me-1"></i>Загрузить файл
+                                </button>
+                            </li>
+                        </ul>
+                        
+                        <div class="tab-content border border-top-0 p-3">
+                            <div class="tab-pane fade show active" id="url-pane" role="tabpanel">
+                                <input type="url" class="form-control" id="image_url" name="image_url" 
+                                       value="{{ post[11] if post|length > 11 else '' }}"
+                                       placeholder="https://images.pexels.com/photos/..." 
+                                       onchange="previewUrlImage(this)">
+                            </div>
+                            <div class="tab-pane fade" id="upload-pane" role="tabpanel">
+                                <input type="file" class="form-control" id="image_file" name="image_file" 
+                                       accept="image/*" onchange="previewUploadedImage(this)">
+                            </div>
+                        </div>
+                        
+                        <!-- Предпросмотр изображения -->
+                        <div id="image-preview" class="mt-3" {% if not (post[11] if post|length > 11 else '') %}style="display: none;"{% endif %}>
+                            <img id="preview-img" class="post-preview-image" alt="Предпросмотр изображения"
+                                 {% if post|length > 11 and post[11] %}src="{{ post[11] }}"{% endif %}>
+                        </div>
+                    </div>
+                    
+                    <!-- Время отправки -->
+                    <div class="mb-4">
+                        <label class="form-label">
+                            <i class="fas fa-clock me-1"></i>
+                            Время отправки
+                        </label>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-sun text-warning fa-2x mb-2"></i>
+                                        <h6>Утром</h6>
+                                        <div class="form-check form-switch d-flex justify-content-center">
+                                            <input class="form-check-input" type="checkbox" id="morning_enabled" 
+                                                   name="morning_enabled" {{ 'checked' if post[3] }} 
+                                                   onchange="toggleTimeSelection('morning')">
+                                        </div>
+                                        <select class="form-select form-select-sm mt-2" id="morning_time" name="morning_time" 
+                                                {{ 'disabled' if not post[3] }}>
+                                            <option value="07:00" {{ 'selected' if post[3] == '07:00' }}>07:00</option>
+                                            <option value="08:00" {{ 'selected' if post[3] == '08:00' }}>08:00</option>
+                                            <option value="09:00" {{ 'selected' if post[3] == '09:00' or not post[3] }}>09:00</option>
+                                            <option value="10:00" {{ 'selected' if post[3] == '10:00' }}>10:00</option>
+                                            <option value="11:00" {{ 'selected' if post[3] == '11:00' }}>11:00</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-sun text-info fa-2x mb-2"></i>
+                                        <h6>Днем</h6>
+                                        <div class="form-check form-switch d-flex justify-content-center">
+                                            <input class="form-check-input" type="checkbox" id="afternoon_enabled" 
+                                                   name="afternoon_enabled" {{ 'checked' if post[4] }}
+                                                   onchange="toggleTimeSelection('afternoon')">
+                                        </div>
+                                        <select class="form-select form-select-sm mt-2" id="afternoon_time" name="afternoon_time"
+                                                {{ 'disabled' if not post[4] }}>
+                                            <option value="12:00" {{ 'selected' if post[4] == '12:00' }}>12:00</option>
+                                            <option value="13:00" {{ 'selected' if post[4] == '13:00' }}>13:00</option>
+                                            <option value="14:00" {{ 'selected' if post[4] == '14:00' or not post[4] }}>14:00</option>
+                                            <option value="15:00" {{ 'selected' if post[4] == '15:00' }}>15:00</option>
+                                            <option value="16:00" {{ 'selected' if post[4] == '16:00' }}>16:00</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-moon text-primary fa-2x mb-2"></i>
+                                        <h6>Вечером</h6>
+                                        <div class="form-check form-switch d-flex justify-content-center">
+                                            <input class="form-check-input" type="checkbox" id="evening_enabled" 
+                                                   name="evening_enabled" {{ 'checked' if post[5] }}
+                                                   onchange="toggleTimeSelection('evening')">
+                                        </div>
+                                        <select class="form-select form-select-sm mt-2" id="evening_time" name="evening_time"
+                                                {{ 'disabled' if not post[5] }}>
+                                            <option value="17:00" {{ 'selected' if post[5] == '17:00' }}>17:00</option>
+                                            <option value="18:00" {{ 'selected' if post[5] == '18:00' }}>18:00</option>
+                                            <option value="19:00" {{ 'selected' if post[5] == '19:00' or not post[5] }}>19:00</option>
+                                            <option value="20:00" {{ 'selected' if post[5] == '20:00' }}>20:00</option>
+                                            <option value="21:00" {{ 'selected' if post[5] == '21:00' }}>21:00</option>
+                                            <option value="22:00" {{ 'selected' if post[5] == '22:00' }}>22:00</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="target_audience" class="form-label">
+                            <i class="fas fa-users me-1"></i>
+                            Целевая аудитория
+                        </label>
+                        <select class="form-select" id="target_audience" name="target_audience">
+                            <option value="channel" {{ 'selected' if post[6] == 'channel' }}>📢 Канал (публичная лента)</option>
+                            <option value="all" {{ 'selected' if post[6] == 'all' }}>👥 Все клиенты</option>
+                            <option value="active" {{ 'selected' if post[6] == 'active' }}>🔥 Активные клиенты</option>
+                            <option value="vip" {{ 'selected' if post[6] == 'vip' }}>💎 VIP клиенты</option>
+                            <option value="new" {{ 'selected' if post[6] == 'new' }}>🆕 Новые клиенты</option>
+                        </select>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            <strong>Канал:</strong> -1002566537425 (публичные посты)
+                            <br><strong>Автоматически добавляются:</strong> кнопки заказа, ссылка на сайт, отзывы товаров
+                        </div>
+                    </div>
+                    
+                    <!-- Настройки кнопок -->
+                    <div class="mb-4">
+                        <label class="form-label">
+                            <i class="fas fa-mouse-pointer me-1"></i>
+                            Кнопки под постом
+                        </label>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="bot_username" class="form-label">Username бота</label>
+                                <input type="text" class="form-control" id="bot_username" name="bot_username" 
+                                       placeholder="Safar_call_bot" value="Safar_call_bot">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="website_url" class="form-label">Ссылка на сайт</label>
+                                <input type="url" class="form-control" id="website_url" name="website_url" 
+                                       placeholder="https://your-website.com" value="https://your-website.com">
+                            </div>
+                        </div>
+                        
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="include_reviews" name="include_reviews" checked>
+                            <label class="form-check-label" for="include_reviews">
+                                Добавить отзывы о популярных товарах
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save me-2"></i>
+                            Сохранить изменения
+                        </button>
+                        <a href="{{ url_for('scheduled_posts') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Отмена
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Предпросмотр -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-eye me-2"></i>
+                    Предпросмотр
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="border rounded p-3" style="background-color: #f8f9fa;">
+                    <div id="preview-content">
+                        <!-- Предпросмотр будет здесь -->
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <h6>Расписание отправки:</h6>
+                    <div id="schedule-preview">
+                        <!-- Расписание будет здесь -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Те же функции что и в create_post.html
+function toggleTimeSelection(period) {
+    const checkbox = document.getElementById(`${period}_enabled`);
+    const select = document.getElementById(`${period}_time`);
+    
+    select.disabled = !checkbox.checked;
+    updateSchedulePreview();
+}
+
+function previewUploadedImage(input) {
+    const file = input.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('preview-img').src = e.target.result;
+            document.getElementById('image-preview').style.display = 'block';
+            updatePreview();
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function previewUrlImage(input) {
+    const url = input.value;
+    if (url) {
+        document.getElementById('preview-img').src = url;
+        document.getElementById('image-preview').style.display = 'block';
+    } else {
+        document.getElementById('image-preview').style.display = 'none';
+    }
+    updatePreview();
+}
+
+function updatePreview() {
+    const title = document.getElementById('title').value;
+    const content = document.getElementById('content').value;
+    const imageUrl = document.getElementById('image_url').value || 
+                    (document.getElementById('preview-img').src !== window.location.href ? 
+                     document.getElementById('preview-img').src : '');
+    const previewDiv = document.getElementById('preview-content');
+    
+    if (title || content || imageUrl) {
+        let preview = '<div class="telegram-message">';
+        
+        if (imageUrl) {
+            preview += `<img src="${imageUrl}" alt="Изображение поста" class="img-fluid rounded mb-2" style="max-height: 200px; width: 100%; object-fit: cover;">`;
+        }
+        
+        if (title) {
+            preview += `<div class="fw-bold mb-2">📢 <b>${title}</b></div>`;
+        }
+        if (content) {
+            preview += `<div class="mb-2">${content.replace(/\n/g, '<br>')}</div>`;
+        }
+        preview += '<div class="mt-2 small text-muted">🛍 Перейти в каталог: /start</div>';
+        preview += '</div>';
+        
+        previewDiv.innerHTML = preview;
+    } else {
+        previewDiv.innerHTML = '<div class="text-muted text-center"><i class="fas fa-mobile-alt fa-2x mb-2"></i><p>Введите данные для предпросмотра</p></div>';
+    }
+}
+
+function updateSchedulePreview() {
+    const scheduleDiv = document.getElementById('schedule-preview');
+    let schedule = '';
+    
+    if (document.getElementById('morning_enabled').checked) {
+        const time = document.getElementById('morning_time').value;
+        schedule += `<div class="mb-1"><i class="fas fa-sun text-warning me-1"></i> Утром в ${time}</div>`;
+    }
+    if (document.getElementById('afternoon_enabled').checked) {
+        const time = document.getElementById('afternoon_time').value;
+        schedule += `<div class="mb-1"><i class="fas fa-sun text-info me-1"></i> Днем в ${time}</div>`;
+    }
+    if (document.getElementById('evening_enabled').checked) {
+        const time = document.getElementById('evening_time').value;
+        schedule += `<div class="mb-1"><i class="fas fa-moon text-primary me-1"></i> Вечером в ${time}</div>`;
+    }
+    
+    if (schedule) {
+        scheduleDiv.innerHTML = schedule;
+    } else {
+        scheduleDiv.innerHTML = '<small class="text-muted">Включите время для предпросмотра</small>';
+    }
+}
+
+// Инициализация
+document.addEventListener('DOMContentLoaded', function() {
+    updatePreview();
+    updateSchedulePreview();
+    
+    // Обновляем предпросмотр при изменении
+    document.getElementById('title').addEventListener('input', updatePreview);
+    document.getElementById('content').addEventListener('input', updatePreview);
+});
+</script>
+
+<style>
+.telegram-message {
+    background: white;
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}

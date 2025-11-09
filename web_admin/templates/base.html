@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Админ-панель{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="sidebar-brand">
+            <h3><i class="fas fa-robot me-2"></i>Shop Admin</h3>
+            <p>Панель управления</p>
+        </div>
+        
+        
+        <ul class="nav flex-column mt-3">
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if request.endpoint == 'dashboard' }}" href="{{ url_for('dashboard') }}">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Главная
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if request.endpoint == 'orders' }}" href="{{ url_for('orders') }}">
+                    <i class="fas fa-shopping-cart"></i>
+                    Заказы
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if request.endpoint == 'products' }}" href="{{ url_for('products') }}">
+                    <i class="fas fa-box"></i>
+                    Товары
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint in ['categories','add_category'] %}active{% endif %}" href="{{ url_for('categories') }}">
+                    <i class="fas fa-th-list me-2"></i> Категории
+                </a>
+            </li>
+    
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint in ['subcategories','toggle_subcategory'] %}active{% endif %}" href="{{ url_for('subcategories') }}">
+                    <i class="fas fa-sitemap me-2"></i> Подкатегории
+                </a>
+            </li>
+    <li class="nav-item">
+                <a class="nav-link {% if request.endpoint in ['customers','customer_profile'] %}active{% endif %}" href="{{ url_for('customers') }}">
+                    <i class="fas fa-users me-2"></i> Клиенты
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint in ['inventory_page','inventory_update_v2','inventory_restock','inventory_replenish'] %}active{% endif %}" href="{{ url_for('inventory_page') }}">
+                    <i class="fas fa-warehouse me-2"></i> Склад
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint in ['analytics_page'] %}active{% endif %}" href="{{ url_for('analytics_page') }}">
+                    <i class="fas fa-chart-line me-2"></i> Аналитика
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint in ['crm_page'] %}active{% endif %}" href="{{ url_for('crm_page') }}">
+                    <i class="fas fa-id-badge me-2"></i> CRM
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint in ['financial_page','profit_report'] %}active{% endif %}" href="{{ url_for('financial_page') }}">
+                    <i class="fas fa-coins me-2"></i> Финансы
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint in ['scheduled_posts'] %}active{% endif %}" href="{{ url_for('scheduled_posts') }}">
+                    <i class="fas fa-paper-plane me-2"></i> Автопостинг
+                </a>
+            </li>
+        </ul>
+
+    </nav>
+    
+    <!-- Main content -->
+    <div class="main-content">
+        <!-- Top navbar -->
+        <div class="top-navbar">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="page-header">{% block page_title %}Главная{% endblock %}</h1>
+                <div class="d-flex align-items-center">
+                    <span class="text-muted me-3">
+                        <i class="fas fa-clock me-1"></i>
+                        <span id="current-time"></span>
+                    </span>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" 
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user me-1"></i>
+                            AdminUser
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <form method="POST" action="{{ url_for('force_reload_bot') }}" style="display: inline;">
+                                    <button type="submit" class="dropdown-item" onclick="return confirm('Принудительно перезагрузить все данные в боте?')">
+                                        <i class="fas fa-sync-alt me-2"></i>Полная синхронизация
+                                    </button>
+                                </form>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                                <i class="fas fa-sign-out-alt me-2"></i>Выйти
+                            </a></li>
+        </ul>
+                    </div>
+                    <div class="badge bg-success ms-2">
+                        <i class="fas fa-circle me-1"></i>
+                        Онлайн
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Content area -->
+        <div class="content-area">
+            <!-- Flash messages -->
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="fas fa-check-circle me-2"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <!-- Page content -->
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Обновление времени
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('ru-RU');
+            document.getElementById('current-time').textContent = timeString;
+        }
+        
+        updateTime();
+        setInterval(updateTime, 1000);
+        
+        // Анимация загрузки для кнопок
+        function showLoading(button) {
+            const originalText = button.innerHTML;
+            button.innerHTML = '<span class="loading-spinner me-2"></span>Загрузка...';
+            button.disabled = true;
+            
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }, 2000);
+        }
+        
+        // Подтверждение действий
+        function confirmAction(message, callback) {
+            if (confirm(message)) {
+                callback();
+            }
+        }
+    </script>
+    
+    {% block scripts %}{% endblock %}
+
+<script>
+async function loadSubcategories(catId, currentId){
+  const sel = document.querySelector('select[name="subcategory_id"]');
+  if(!sel) return;
+  sel.innerHTML = '';
+  const baseOpt = document.createElement('option');
+  baseOpt.value = '';
+  baseOpt.textContent = 'Без подкатегории';
+  sel.appendChild(baseOpt);
+  if(!catId){ return; }
+  try {
+    const res = await fetch(`/api/subcategories/${catId}`);
+    if(!res.ok) return;
+    const data = await res.json();
+    data.forEach(s => {
+      const o = document.createElement('option');
+      o.value = s.id;
+      o.textContent = s.name;
+      if (currentId && String(currentId) === String(s.id)) o.selected = true;
+      sel.appendChild(o);
+    });
+  } catch(e) { console.error(e); }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const cat = document.querySelector('select[name="category_id"]');
+  const sub = document.querySelector('select[name="subcategory_id"]');
+  if(!cat || !sub) return;
+  const currentId = sub.dataset ? sub.dataset.current : '';
+  if(cat.value){ loadSubcategories(cat.value, currentId); }
+  cat.addEventListener('change', e => loadSubcategories(e.target.value));
+});
+</script>
+</body>
+</html>

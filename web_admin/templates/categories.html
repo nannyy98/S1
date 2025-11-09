@@ -1,0 +1,50 @@
+
+{% extends 'base.html' %}
+{% block title %}Категории{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h1 class="h3">Категории</h1>
+  <a class="btn btn-primary" href="{{ url_for('add_category') }}">+ Добавить категорию</a>
+</div>
+<div class="table-responsive">
+<table class="table table-striped align-middle">
+  <thead><tr><th>ID</th><th>Эмодзи</th><th>Название</th><th>Описание</th><th>Товаров</th><th>Статус</th><th>Действия</th></tr></thead>
+  <tbody>
+  {% for c in categories %}
+    <tr>
+      <td>{{ c[0] }}</td>
+      <td><span style="font-size: 1.5rem;">{{ c[3] or '📦' }}</span></td>
+      <td><strong>{{ c[1] }}</strong></td>
+      <td>{{ c[2][:50] if c[2] else '-' }}{% if c[2] and c[2]|length > 50 %}...{% endif %}</td>
+      <td>
+        <span class="badge bg-info">{{ c[5] or 0 }} шт.</span>
+      </td>
+      <td>
+        {% if c[4] %}
+          <span class="badge bg-success">Активна</span>
+        {% else %}
+          <span class="badge bg-secondary">Скрыта</span>
+        {% endif %}
+      </td>
+      <td>
+        <div class="btn-group btn-group-sm">
+          <form method="post" action="{{ url_for('toggle_category', cid=c[0]) }}" style="display:inline">
+            <button class="btn btn-outline-{% if c[4] %}warning{% else %}success{% endif %}" type="submit" title="{% if c[4] %}Скрыть{% else %}Показать{% endif %}">
+              <i class="fas fa-{% if c[4] %}eye-slash{% else %}eye{% endif %}"></i>
+              {% if c[4] %}Скрыть{% else %}Показать{% endif %}
+            </button>
+          </form>
+          <form method="post" action="{{ url_for('delete_category') }}" style="display:inline" onsubmit="return confirm('Удалить категорию? Все товары в этой категории также будут удалены!')">
+            <input type="hidden" name="cid" value="{{ c[0] }}">
+            <button class="btn btn-outline-danger" type="submit" title="Удалить">
+              <i class="fas fa-trash"></i>
+            </button>
+          </form>
+        </div>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}CRM - Админ-панель{% endblock %}
+{% block page_title %}CRM и сегментация клиентов{% endblock %}
+
+{% block content %}
+<!-- Сегменты клиентов -->
+<div class="row mb-4">
+    {% for segment_name, customers in segments.items() %}
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    {% if segment_name == 'champions' %}
+                        <i class="fas fa-crown text-warning me-2"></i>Чемпионы
+                    {% elif segment_name == 'loyal' %}
+                        <i class="fas fa-heart text-danger me-2"></i>Лояльные
+                    {% elif segment_name == 'potential' %}
+                        <i class="fas fa-star text-info me-2"></i>Потенциальные
+                    {% elif segment_name == 'new' %}
+                        <i class="fas fa-user-plus text-success me-2"></i>Новые
+                    {% elif segment_name == 'need_attention' %}
+                        <i class="fas fa-exclamation text-warning me-2"></i>Требуют внимания
+                    {% elif segment_name == 'at_risk' %}
+                        <i class="fas fa-exclamation-triangle text-danger me-2"></i>В зоне риска
+                    {% else %}
+                        <i class="fas fa-users text-muted me-2"></i>{{ segment_name.title() }}
+                    {% endif %}
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <h3 class="text-primary">{{ customers|length }}</h3>
+                    <p class="text-muted mb-0">клиентов</p>
+                </div>
+                
+                {% if customers %}
+                <div class="mb-3">
+                    {% set total_value = customers|sum(attribute=4) if customers[0]|length > 4 else 0 %}
+                    <small class="text-muted">
+                        Общая ценность: <strong>${{ "%.2f"|format(total_value) }}</strong>
+                    </small>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-outline-primary btn-sm" 
+                            onclick="createCampaign('{{ segment_name }}')">
+                        <i class="fas fa-bullhorn me-1"></i>
+                        Создать кампанию
+                    </button>
+                    <button type="button" class="btn btn-outline-info btn-sm" 
+                            onclick="viewSegmentDetails('{{ segment_name }}')">
+                        <i class="fas fa-eye me-1"></i>
+                        Подробнее
+                    </button>
+                </div>
+                {% else %}
+                <div class="text-center text-muted">
+                    <i class="fas fa-inbox fa-2x mb-2"></i>
+                    <p>Нет клиентов в этом сегменте</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Клиенты в зоне риска -->
+{% if at_risk_customers %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-exclamation-triangle me-2 text-danger"></i>
+            Клиенты в зоне риска
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Клиент</th>
+                        <th>Последний заказ</th>
+                        <th>Дней назад</th>
+                        <th>Всего заказов</th>
+                        <th>Потрачено</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for customer in at_risk_customers %}
+                    <tr>
+                        <td><strong>{{ customer[1] }}</strong></td>
+                        <td>{{ customer[3][:10] if customer[3] else 'Никогда' }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'danger' if customer[4] > 120 else 'warning' if customer[4] > 90 else 'info' }}">
+                                {{ "%.0f"|format(customer[4]) }} дней
+                            </span>
+                        </td>
+                        <td>{{ customer[5] }}</td>
+                        <td><strong>${{ "%.2f"|format(customer[6]) }}</strong></td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-success" 
+                                        onclick="sendWinBackOffer({{ customer[0] }})" title="Предложение возврата">
+                                    <i class="fas fa-gift"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-primary" 
+                                        onclick="viewCustomerProfile({{ customer[0] }})" title="Профиль">
+                                    <i class="fas fa-user"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Быстрые действия -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-bolt me-2"></i>
+            Быстрые действия CRM
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <div class="d-grid">
+                    <button type="button" class="btn btn-outline-primary" onclick="createBroadcast()">
+                        <i class="fas fa-bullhorn me-2"></i>
+                        Создать рассылку
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="d-grid">
+                    <button type="button" class="btn btn-outline-success" onclick="createPromoCode()">
+                        <i class="fas fa-tags me-2"></i>
+                        Создать промокод
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="d-grid">
+                    <button type="button" class="btn btn-outline-info" onclick="analyzeChurn()">
+                        <i class="fas fa-chart-line me-2"></i>
+                        Анализ оттока
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="d-grid">
+                    <button type="button" class="btn btn-outline-warning" onclick="exportCrmData()">
+                        <i class="fas fa-download me-2"></i>
+                        Экспорт CRM
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function createCampaign(segment) {
+    alert(`Создание кампании для сегмента: ${segment}`);
+}
+
+function viewSegmentDetails(segment) {
+    alert(`Детали сегмента: ${segment}`);
+}
+
+function sendWinBackOffer(customerId) {
+    if (confirm('Отправить предложение возврата этому клиенту?')) {
+        alert('Предложение возврата отправлено!');
+    }
+}
+
+function viewCustomerProfile(customerId) {
+    alert(`Просмотр профиля клиента ID: ${customerId}`);
+}
+
+function createBroadcast() {
+    alert('Функция создания рассылки будет добавлена');
+}
+
+function createPromoCode() {
+    alert('Функция создания промокода будет добавлена');
+}
+
+function analyzeChurn() {
+    alert('Анализ оттока клиентов будет добавлен');
+}
+
+function exportCrmData() {
+    alert('Экспорт CRM данных будет добавлен');
+}
+</script>
+{% endblock %}

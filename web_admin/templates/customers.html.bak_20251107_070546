@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+
+{% block title %}Клиенты - Админ-панель{% endblock %}
+{% block page_title %}База клиентов{% endblock %}
+
+{% block content %}
+<!-- Поиск клиентов -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-8">
+                <label for="search" class="form-label">
+                    <i class="fas fa-search me-1"></i>Поиск клиентов
+                </label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       placeholder="Имя, телефон или email клиента" value="{{ search }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-2"></i>Найти клиентов
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Таблица клиентов -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="fas fa-users me-2"></i>
+            Клиенты ({{ customers|length }})
+        </h5>
+        <div class="btn-group">
+            <button type="button" class="btn btn-outline-success btn-sm" onclick="createBroadcast()">
+                <i class="fas fa-bullhorn me-1"></i>
+                Рассылка
+            </button>
+            <a href="{{ url_for('export_customers') }}" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-download me-1"></i>
+                Экспорт
+            </a>
+        </div>
+    </div>
+    
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Клиент</th>
+                        <th>Контакты</th>
+                        <th>Заказы</th>
+                        <th>Потрачено</th>
+                        <th>Последний заказ</th>
+                        <th>Статус</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for customer in customers %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    <div class="customer-avatar">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="fw-bold">{{ customer[1] }}</div>
+                                    <small class="text-muted">ID: {{ customer[0] }}</small>
+                                    {% if customer[5] > 0 %}
+                                        <div class="mt-1">
+                                            {% if customer[6] >= 1000 %}
+                                                <span class="badge bg-warning">
+                                                    <i class="fas fa-crown me-1"></i>VIP
+                                                </span>
+                                            {% elif customer[6] >= 500 %}
+                                                <span class="badge bg-info">
+                                                    <i class="fas fa-star me-1"></i>Золотой
+                                                </span>
+                                            {% elif customer[6] >= 200 %}
+                                                <span class="badge bg-secondary">
+                                                    <i class="fas fa-medal me-1"></i>Серебряный
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-light text-dark">
+                                                    <i class="fas fa-user me-1"></i>Обычный
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    {% else %}
+                                        <div class="mt-1">
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-user-plus me-1"></i>Новый
+                                            </span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% if customer[2] %}
+                                <div class="mb-1">
+                                    <i class="fas fa-phone me-1 text-success"></i>
+                                    <small>{{ customer[2] }}</small>
+                                </div>
+                            {% endif %}
+                            {% if customer[3] %}
+                                <div>
+                                    <i class="fas fa-envelope me-1 text-info"></i>
+                                    <small>{{ customer[3] }}</small>
+                                </div>
+                            {% endif %}
+                            {% if not customer[2] and not customer[3] %}
+                                <small class="text-muted">Не указаны</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="text-center">
+                                <div class="customer-orders-count">{{ customer[5] }}</div>
+                                <small class="customer-orders-label">заказов</small>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="customer-spent-amount">${{ "%.2f"|format(customer[6]) }}</div>
+                            {% if customer[5] > 0 %}
+                                <small class="customer-avg-order">
+                                    Средний: ${{ "%.2f"|format(customer[6] / customer[5]) }}
+                                </small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if customer[7] %}
+                                <div class="customer-last-order-date">{{ customer[7][:10] }}</div>
+                                <small class="customer-last-order-time">{{ customer[7][11:16] }}</small>
+                            {% else %}
+                                <span class="customer-no-orders">
+                                    <i class="fas fa-minus"></i> Нет заказов
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if customer[7] %}
+                                {% set days_ago = ((today_stats[0] if today_stats else 0) - customer[7][:10]|length) %}
+                                {% if customer[7] >= (now - timedelta(days=7)).strftime('%Y-%m-%d') %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-fire me-1"></i>Активный
+                                    </span>
+                                {% elif customer[7] >= (now - timedelta(days=30)).strftime('%Y-%m-%d') %}
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-clock me-1"></i>Умеренный
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-sleep me-1"></i>Неактивный
+                                    </span>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-light text-dark">
+                                    <i class="fas fa-user-plus me-1"></i>Новый
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-primary" 
+                                        onclick="viewCustomerProfile({{ customer[0] }})" title="Профиль клиента">
+                                    <i class="fas fa-user"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-success" 
+                                        onclick="sendPersonalOffer({{ customer[0] }})" title="Персональное предложение">
+                                    <i class="fas fa-gift"></i>
+                                </button>
+                                <a href="{{ url_for('orders') }}?search={{ customer[1] }}" 
+                                   class="btn btn-outline-info" title="Заказы клиента">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if not customers %}
+        <div class="text-center py-5">
+            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">Клиенты не найдены</h5>
+            <p class="text-muted">Попробуйте изменить параметры поиска</p>
+        </div>
+        {% endif %}
+        
+        <!-- Пагинация -->
+        {% if total_pages > 1 %}
+        <div class="d-flex justify-content-center p-3">
+            <nav aria-label="Пагинация клиентов">
+                <ul class="pagination">
+                    {% if current_page > 1 %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ current_page - 1 }}&search={{ search }}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for page_num in range(1, total_pages + 1) %}
+                        {% if page_num == current_page %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                        {% elif page_num <= current_page + 2 and page_num >= current_page - 2 %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_num }}&search={{ search }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if current_page < total_pages %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ current_page + 1 }}&search={{ search }}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function viewCustomerProfile(customerId) {
+    window.location.href = `/customer/${customerId}`;
+}
+
+function sendPersonalOffer(customerId) {
+    if (confirm('Отправить персональное предложение этому клиенту?')) {
+        alert('Персональное предложение отправлено!');
+    }
+}
+
+function createBroadcast() {
+    // Показываем модальное окно для рассылки
+    const modal = new bootstrap.Modal(document.getElementById('broadcastModal'));
+    modal.show();
+}
+</script>
+
+<!-- Модальное окно рассылки -->
+<div class="modal fade" id="broadcastModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-bullhorn me-2"></i>
+                    Создать рассылку
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('send_broadcast') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="broadcast_message" class="form-label">Текст сообщения</label>
+                        <textarea class="form-control" id="broadcast_message" name="message" 
+                                  rows="5" placeholder="Введите текст рассылки..." required></textarea>
+                        <div class="form-text">Поддерживается HTML разметка</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="target_audience" class="form-label">Целевая аудитория</label>
+                        <select class="form-select" id="target_audience" name="target_audience">
+                            <option value="all">Все клиенты</option>
+                            <option value="active">Активные клиенты (покупали за месяц)</option>
+                            <option value="vip">VIP клиенты (потратили $500+)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-paper-plane me-2"></i>
+                        Отправить рассылку
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</script>
+{% endblock %}

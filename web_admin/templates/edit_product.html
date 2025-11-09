@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% block title %}Редактировать товар{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <h1 class="h3">Редактировать товар</h1>
+  <a class="btn btn-secondary" href="{{ url_for('products') }}">← Назад к товарам</a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data">
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Название <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" name="name" value="{{ product[1] }}" required>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Категория <span class="text-danger">*</span></label>
+          <select id="category_id"  name="category_id" class="form-select"  required>
+            <option value="">Выберите категорию</option>
+            {% for cat in categories %}
+              <option value="{{ cat[0] }}" {% if cat[0] == product[4] %}selected{% endif %}>{{ cat[1] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Подкатегория</label>
+          <select id="subcategory_id" data-selected="{{ product[5] }}" name="subcategory_id" class="form-select"  id="subcategory_id"><option value="">Без подкатегории</option></select>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Описание</label>
+        <textarea class="form-control" name="description" rows="3">{{ product[2] or '' }}</textarea>
+      </div>
+
+      <div class="row">
+        <div class="col-md-3 mb-3">
+          <label class="form-label">Цена продажи ($) <span class="text-danger">*</span></label>
+          <input type="number" class="form-control" name="price" step="0.01" value="{{ product[3] }}" required>
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <label class="form-label">Себестоимость ($)</label>
+          <input type="number" class="form-control" name="cost_price" step="0.01" value="{{ product[4] or 0 }}">
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <label class="form-label">Остаток (шт.)</label>
+          <input type="number" class="form-control" name="stock" value="{{ product[7] or 0 }}">
+        </div>
+
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Подкатегория</label>
+          <select class="form-select" name="subcategory_id" id="subcategory_id" data-current="{{ product[6] if product and product|length>6 else '' }}"><option value="">Без подкатегории</option></select>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Текущее изображение</label>
+        {% if product[8] %}
+          <div class="mb-2">
+            <img src="{{ product[8] }}" alt="{{ product[1] }}" style="max-width: 200px; max-height: 200px; object-fit: cover; border-radius: 8px;">
+          </div>
+          <input type="hidden" name="current_image_url" value="{{ product[8] }}">
+        {% else %}
+          <p class="text-muted">Изображение не загружено</p>
+        {% endif %}
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Загрузить новое изображение</label>
+        <input type="file" class="form-control" name="image_file" accept="image/*">
+        <small class="text-muted">Оставьте пустым, чтобы сохранить текущее изображение</small>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save me-1"></i> Сохранить изменения
+        </button>
+        <a href="{{ url_for('products') }}" class="btn btn-secondary">
+          <i class="fas fa-times me-1"></i> Отмена
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+
+<script>
+  async function loadSubcategories(catId, currentId) {
+    const resp = await fetch(`/api/subcategories/${catId}`);
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const sel = document.getElementById('subcategory_id');
+    sel.innerHTML = '<option value="">Без подкатегории</option>';
+    for (const s of data) {
+      const opt = document.createElement('option');
+      opt.value = s.id; opt.textContent = s.name;
+      if (String(currentId) === String(s.id)) opt.selected = true;
+      sel.appendChild(opt);
+    }
+  }
+  const catSel = document.querySelector('select[name="category_id"]');
+  if (catSel) {
+    catSel.addEventListener('change', (e) => loadSubcategories(e.target.value, null));
+  }
+</script>
+
+<!-- SUBCATEGORY-LOADER-START -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const cat = document.getElementById('category_id');
+  const sub = document.getElementById('subcategory_id');
+  const selectedSub = sub.getAttribute('data-selected') || '';
+  function clearSub() {
+    sub.innerHTML = '<option value="">Без подкатегории</option>';
+  }
+  function loadSubs(categoryId, preselect) {
+    clearSub();
+    if (!categoryId) return;
+    fetch(`/api/subcategories/${categoryId}`)
+      .then(r => r.json())
+      .then(items => {
+        items.forEach(it => {
+          const opt = document.createElement('option');
+          opt.value = it.id;
+          opt.textContent = it.name;
+          if (preselect && String(preselect) === String(it.id)) opt.selected = true;
+          sub.appendChild(opt);
+        });
+      })
+      .catch(() => {});
+  }
+  cat && cat.addEventListener('change', () => loadSubs(cat.value, null));
+  // initial populate with preselect from data-selected
+  if (cat && cat.value) loadSubs(cat.value, selectedSub);
+});
+</script>
+<!-- SUBCATEGORY-LOADER-END -->

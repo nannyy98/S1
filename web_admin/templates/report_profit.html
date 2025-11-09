@@ -1,0 +1,65 @@
+
+{% extends 'base.html' %}
+{% block title %}Отчёт по прибыльности{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Отчёт по прибыльности</h1>
+
+<div class="row">
+  <div class="col-lg-6">
+    <div class="card mb-3"><div class="card-body">
+      <h5 class="card-title">Топ-10 товаров по прибыли</h5>
+      <canvas id="chartProducts" height="160"></canvas>
+    </div></div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card mb-3"><div class="card-body">
+      <h5 class="card-title">Топ-10 категорий по прибыли</h5>
+      <canvas id="chartCategories" height="160"></canvas>
+    </div></div>
+  </div>
+</div>
+
+<h5 class="mt-4">Товары</h5>
+<div class="table-responsive">
+<table class="table table-sm table-striped">
+  <thead><tr><th>ID</th><th>Название</th><th>Выручка</th><th>Себестоимость</th><th>Прибыль</th></tr></thead>
+  <tbody>
+  {% for r in product_rows %}
+    <tr><td>{{ r[0] }}</td><td>{{ r[1] }}</td><td>{{ r[2] }}</td><td>{{ r[3] }}</td><td>{{ r[4] }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<h5 class="mt-4">Категории</h5>
+<div class="table-responsive">
+<table class="table table-sm table-striped">
+  <thead><tr><th>ID</th><th>Название</th><th>Выручка</th><th>Себестоимость</th><th>Прибыль</th></tr></thead>
+  <tbody>
+  {% for r in category_rows %}
+    <tr><td>{{ r[0] }}</td><td>{{ r[1] }}</td><td>{{ r[2] }}</td><td>{{ r[3] }}</td><td>{{ r[4] }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<script>
+const tp = {{ top_products|tojson }};
+const tc = {{ top_categories|tojson }};
+
+new Chart(document.getElementById('chartProducts'), {
+  type: 'bar',
+  data: {
+    labels: tp.map(x => x.name),
+    datasets: [{label:'Прибыль', data: tp.map(x => x.profit)}]
+  },
+});
+new Chart(document.getElementById('chartCategories'), {
+  type: 'bar',
+  data: {
+    labels: tc.map(x => x.name),
+    datasets: [{label:'Прибыль', data: tc.map(x => x.profit)}]
+  },
+});
+</script>
+{% endblock %}

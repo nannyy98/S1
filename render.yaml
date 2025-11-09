@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: safar-combined
+    env: python
+    plan: starter
+    disk:
+      name: safar-data
+      mountPath: /data
+      sizeGB: 5
+    buildCommand: |
+      pip install -r web_admin/requirements.txt
+      if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    startCommand: ./start.sh
+    autoDeploy: true
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: ADMIN_TELEGRAM_ID
+        sync: false
+      - key: DB_FILENAME
+        value: shop_bot.db
+      - key: ENVIRONMENT
+        value: production
+      - key: FLASK_SECRET_KEY
+        generateValue: true
+      - key: ADMIN_NAME
+        value: AdminUser

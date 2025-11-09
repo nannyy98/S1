@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% block title %}Финансы{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <h1 class="h3">Финансовые отчёты</h1>
+  <div class="btn-group">
+    <a href="{{ url_for('export_financial') }}" class="btn btn-success">
+      <i class="fas fa-file-excel me-1"></i> Скачать Excel
+    </a>
+    <a href="{{ url_for('export_financial', format='csv') }}" class="btn btn-outline-success">
+      <i class="fas fa-file-csv me-1"></i> Скачать CSV
+    </a>
+  </div>
+</div>
+
+<!-- Основные метрики -->
+<div class="row mb-4">
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card stat-card-success h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <p class="stat-label mb-2">Выручка</p>
+            <h2 class="stat-number mb-0">${{ '%.2f'|format(metrics.revenue or 0) }}</h2>
+          </div>
+          <div class="stat-icon">
+            <i class="fas fa-dollar-sign"></i>
+          </div>
+        </div>
+        <small class="text-white-50">
+          <i class="fas fa-arrow-up me-1"></i>
+          Общая выручка за период
+        </small>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card stat-card-warning h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <p class="stat-label mb-2">Себестоимость</p>
+            <h2 class="stat-number mb-0">${{ '%.2f'|format(metrics.cost or 0) }}</h2>
+          </div>
+          <div class="stat-icon">
+            <i class="fas fa-chart-line"></i>
+          </div>
+        </div>
+        <small class="text-white-50">
+          <i class="fas fa-box me-1"></i>
+          Затраты на товары
+        </small>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card stat-card-info h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <p class="stat-label mb-2">Прибыль</p>
+            <h2 class="stat-number mb-0">${{ '%.2f'|format(metrics.profit or 0) }}</h2>
+          </div>
+          <div class="stat-icon">
+            <i class="fas fa-chart-pie"></i>
+          </div>
+        </div>
+        <small class="text-white-50">
+          <i class="fas fa-percent me-1"></i>
+          Маржа: {{ '%.1f'|format(((metrics.profit or 0) / (metrics.revenue or 1) * 100) if metrics.revenue else 0) }}%
+        </small>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card stat-card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <p class="stat-label mb-2">Средний чек</p>
+            <h2 class="stat-number mb-0">${{ '%.2f'|format(metrics.aov or 0) }}</h2>
+          </div>
+          <div class="stat-icon">
+            <i class="fas fa-shopping-cart"></i>
+          </div>
+        </div>
+        <small class="text-white-50">
+          <i class="fas fa-receipt me-1"></i>
+          Заказов: {{ metrics.orders or 0 }}
+        </small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- График прибыли -->
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">
+          <i class="fas fa-chart-bar me-2"></i>
+          Анализ рентабельности
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row text-center">
+          <div class="col-md-4 mb-3">
+            <div class="summary-metric">
+              <div class="summary-number text-success">${{ '%.2f'|format(metrics.revenue or 0) }}</div>
+              <div class="summary-label">Выручка</div>
+              <div class="progress mt-2" style="height: 20px;">
+                <div class="progress-bar bg-success" style="width: 100%">100%</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="summary-metric">
+              <div class="summary-number text-warning">${{ '%.2f'|format(metrics.cost or 0) }}</div>
+              <div class="summary-label">Себестоимость</div>
+              <div class="progress mt-2" style="height: 20px;">
+                <div class="progress-bar bg-warning" style="width: {{ ((metrics.cost or 0) / (metrics.revenue or 1) * 100) if metrics.revenue else 0 }}%">
+                  {{ '%.0f'|format(((metrics.cost or 0) / (metrics.revenue or 1) * 100) if metrics.revenue else 0) }}%
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="summary-metric">
+              <div class="summary-number text-info">${{ '%.2f'|format(metrics.profit or 0) }}</div>
+              <div class="summary-label">Чистая прибыль</div>
+              <div class="progress mt-2" style="height: 20px;">
+                <div class="progress-bar bg-info" style="width: {{ ((metrics.profit or 0) / (metrics.revenue or 1) * 100) if metrics.revenue else 0 }}%">
+                  {{ '%.0f'|format(((metrics.profit or 0) / (metrics.revenue or 1) * 100) if metrics.revenue else 0) }}%
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ТОП категории по выручке -->
+{% if by_cat %}
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">
+          <i class="fas fa-crown me-2"></i>
+          ТОП категории по выручке
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Рейтинг</th>
+                <th>Категория</th>
+                <th>Выручка</th>
+                <th>Доля в выручке</th>
+                <th>График</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in by_cat %}
+              <tr>
+                <td>
+                  <div class="financial-ranking-badge">{{ loop.index }}</div>
+                </td>
+                <td>
+                  <strong>{{ row[0] or 'Без категории' }}</strong>
+                </td>
+                <td>
+                  <span class="order-total-amount">${{ '%.2f'|format(row[1] or 0) }}</span>
+                </td>
+                <td>
+                  {% set share = ((row[1] or 0) / (metrics.revenue or 1) * 100) if metrics.revenue else 0 %}
+                  <span class="badge bg-primary">{{ '%.1f'|format(share) }}%</span>
+                </td>
+                <td style="width: 30%;">
+                  <div class="progress" style="height: 25px;">
+                    <div class="financial-progress-bar"
+                         style="width: {{ share }}%">
+                      ${{ '%.0f'|format(row[1] or 0) }}
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <div class="card-body text-center text-muted py-5">
+    <i class="fas fa-chart-bar fa-3x mb-3"></i>
+    <h5>Нет данных по категориям</h5>
+    <p>Данные появятся после первых продаж</p>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

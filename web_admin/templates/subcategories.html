@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}Подкатегории{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h1 class="h3">Подкатегории</h1>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="post" class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Название<span class="text-danger">*</span></label>
+        <input class="form-control" name="name" placeholder="Например: Игровые ноутбуки" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Категория<span class="text-danger">*</span></label>
+        <select class="form-select" name="category_id" required>
+          <option value="">Выберите категорию</option>
+          {% for c in categories %}
+            <option value="{{ c[0] }}">{{ c[1] }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Эмодзи</label>
+        <input class="form-control" name="emoji" placeholder="🔧">
+      </div>
+      <div class="col-md-2 d-flex align-items-end">
+        <button class="btn btn-primary w-100" type="submit">Добавить</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-striped align-middle">
+        <thead>
+          <tr>
+            <th>ID</th><th>Эмодзи</th><th>Подкатегория</th><th>Категория</th><th>Статус</th><th>Создана</th><th style="width:180px">Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in subcategories %}
+          <tr>
+            <td>{{ s[0] }}</td>
+            <td><span style="font-size: 1.5rem;">{{ s[3] or '📁' }}</span></td>
+            <td>{{ s[1] }}</td>
+            <td>{{ s[2] or '-' }}</td>
+            <td>
+              {% if s[4] %}<span class="badge bg-success">Активна</span>{% else %}<span class="badge bg-secondary">Скрыта</span>{% endif %}
+            </td>
+            <td>{{ s[5] }}</td>
+            <td>
+              <div class="btn-group btn-group-sm">
+                <form method="post" action="{{ url_for('toggle_subcategory', sid=s[0]) }}">
+                  <button class="btn btn-outline-warning" type="submit">
+                    <i class="fas fa-eye{% if s[4] %}-slash{% endif %}"></i>
+                    {% if s[4] %}Скрыть{% else %}Показать{% endif %}
+                  </button>
+                </form>
+                <form method="post" action="{{ url_for('delete_subcategory', sid=s[0]) }}" onsubmit="return confirm('Удалить подкатегорию {{ s[1] }}?');">
+                  <button class="btn btn-outline-danger" type="submit"><i class="fas fa-trash"></i> Удалить</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="text-muted">Пока нет подкатегорий</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}Заказ #{{ order_data.order[0] }} - Админ-панель{% endblock %}
+{% block page_title %}Заказ #{{ order_data.order[0] }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Информация о заказе -->
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Детали заказа
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>ID заказа:</strong></td>
+                                <td>#{{ order_data.order[0] }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Дата создания:</strong></td>
+                                <td>{{ order_data.order[7] }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Статус:</strong></td>
+                                <td>
+                                    <span class="status-badge status-{{ order_data.order[3] }}">
+                                        {% if order_data.order[3] == 'pending' %}В обработке
+                                        {% elif order_data.order[3] == 'confirmed' %}Подтвержден
+                                        {% elif order_data.order[3] == 'shipped' %}Отправлен
+                                        {% elif order_data.order[3] == 'delivered' %}Доставлен
+                                        {% elif order_data.order[3] == 'cancelled' %}Отменен
+                                        {% endif %}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Способ оплаты:</strong></td>
+                                <td>
+                                    {% if order_data.order[5] == 'online' %}
+                                        <i class="fas fa-credit-card me-1"></i>Онлайн оплата
+                                    {% else %}
+                                        <i class="fas fa-money-bill me-1"></i>Наличными при получении
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Общая сумма:</strong></td>
+                                <td><h5 class="text-success">${{ "%.2f"|format(order_data.order[2]) }}</h5></td>
+                            </tr>
+                            {% if order_data.order[6] > 0 %}
+                            <tr>
+                                <td><strong>Скидка:</strong></td>
+                                <td class="text-danger">-${{ "%.2f"|format(order_data.order[6]) }}</td>
+                            </tr>
+                            {% endif %}
+                            <tr>
+                                <td><strong>Адрес доставки:</strong></td>
+                                <td>{{ order_data.order[4] or 'Не указан' }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Товары в заказе -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-box me-2"></i>
+                    Товары в заказе
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Товар</th>
+                                <th>Количество</th>
+                                <th>Цена за единицу</th>
+                                <th>Сумма</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in order_data.items %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if item[3] %}
+                                            <img src="{{ item[3] }}" alt="{{ item[2] }}" 
+                                                 class="me-3 rounded" style="width: 50px; height: 50px; object-fit: cover;">
+                                        {% endif %}
+                                        <div>
+                                            <div class="fw-bold">{{ item[2] }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ item[0] }}</td>
+                                <td>${{ "%.2f"|format(item[1]) }}</td>
+                                <td><strong>${{ "%.2f"|format(item[0] * item[1]) }}</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-active">
+                                <th colspan="3">Итого:</th>
+                                <th>${{ "%.2f"|format(order_data.order[2]) }}</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Управление заказом -->
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-cogs me-2"></i>
+                    Управление заказом
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('update_order_status') }}">
+                    <input type="hidden" name="order_id" value="{{ order_data.order[0] }}">
+                    
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Изменить статус:</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="pending" {{ 'selected' if order_data.order[3] == 'pending' }}>В обработке</option>
+                            <option value="confirmed" {{ 'selected' if order_data.order[3] == 'confirmed' }}>Подтвержден</option>
+                            <option value="shipped" {{ 'selected' if order_data.order[3] == 'shipped' }}>Отправлен</option>
+                            <option value="delivered" {{ 'selected' if order_data.order[3] == 'delivered' }}>Доставлен</option>
+                            <option value="cancelled" {{ 'selected' if order_data.order[3] == 'cancelled' }}>Отменен</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100 mb-3">
+                        <i class="fas fa-save me-2"></i>
+                        Обновить статус
+                    </button>
+                </form>
+                
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-outline-info">
+                        <i class="fas fa-print me-2"></i>
+                        Печать заказа
+                    </button>
+                    
+                    <button type="button" class="btn btn-outline-success">
+                        <i class="fas fa-envelope me-2"></i>
+                        Отправить клиенту
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Информация о клиенте -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-user me-2"></i>
+                    Информация о клиенте
+                </h5>
+            </div>
+            <div class="card-body">
+                {% set user_id = order_data.order[1] %}
+                {% set customer_info = db.execute_query('SELECT name, phone, email, created_at FROM users WHERE id = ?', (user_id,))[0] %}
+                
+                <div class="mb-3">
+                    <strong>Имя:</strong><br>
+                    {{ customer_info[0] }}
+                </div>
+                
+                {% if customer_info[1] %}
+                <div class="mb-3">
+                    <strong>Телефон:</strong><br>
+                    <a href="tel:{{ customer_info[1] }}">{{ customer_info[1] }}</a>
+                </div>
+                {% endif %}
+                
+                {% if customer_info[2] %}
+                <div class="mb-3">
+                    <strong>Email:</strong><br>
+                    <a href="mailto:{{ customer_info[2] }}">{{ customer_info[2] }}</a>
+                </div>
+                {% endif %}
+                
+                <div class="mb-3">
+                    <strong>Клиент с:</strong><br>
+                    {{ customer_info[3][:10] }}
+                </div>
+                
+                <div class="d-grid">
+                    <a href="{{ url_for('customers') }}?search={{ customer_info[0] }}" class="btn btn-outline-primary">
+                        <i class="fas fa-user-circle me-2"></i>
+                        Профиль клиента
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
