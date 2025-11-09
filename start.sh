@@ -15,6 +15,8 @@ fi
 
 ln -sf "${DB_DISK_PATH}" "${DB_PROJECT_PATH}" || true
 
+rm -rf /opt/render/project/src/web_admin/uploads || true
+ln -s /data/uploads /opt/render/project/src/web_admin/uploads || true
 
 export DB_PATH="${DB_DISK_PATH}"
 export UPLOAD_DIR="/data/uploads"
@@ -24,8 +26,3 @@ python /opt/render/project/src/main.py &
 
 cd /opt/render/project/src/web_admin
 exec gunicorn -w 2 -k gthread -t 120 -b 0.0.0.0:$PORT app:app
-
-
-# Link static/uploads -> /data/uploads (legacy compatibility)
-rm -rf /opt/render/project/src/web_admin/static/uploads || true
-ln -s /data/uploads /opt/render/project/src/web_admin/static/uploads || true
