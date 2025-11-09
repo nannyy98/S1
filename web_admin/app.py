@@ -54,16 +54,6 @@ telegram_bot = TelegramBotIntegration()
 
 
 inventory_manager = InventoryManager(db)
-# Настройки загрузки файлов
-UPLOAD_FOLDER = 'static/uploads'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
-MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
-
-app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), UPLOAD_FOLDER)
-app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
-
-# Создаем папку для загрузок
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -1871,16 +1861,3 @@ def toggle_subcategory(sid):
 
 @app.route('/subcategories/delete/<int:sid>', methods=['POST'])
 @login_required
-def delete_subcategory(sid):
-    db.execute_query('DELETE FROM subcategories WHERE id=?', (sid,))
-    telegram_bot.trigger_bot_data_reload()
-    flash('Подкатегория удалена')
-    return redirect(url_for('subcategories'))
-
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
-
-import os
-from flask import send_from_directory, abort
-
-UPLOAD_DIR = os.getenv('UPLOAD_DIR', os.path.join(os.path.dirname(__file__), 'uploads'))
