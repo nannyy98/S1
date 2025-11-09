@@ -7,7 +7,7 @@ import os
 import sys
 import uuid
 from datetime import datetime, timedelta
-from flask import Flask, abort, flash, jsonify, make_response, redirect, render_template, request, send_from_directory, session, url_for
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, send_from_directory, make_response
 
 # Добавляем путь к модулям бота
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -23,26 +23,6 @@ def inject_time_helpers():
     from datetime import datetime, timedelta
     return {'now_dt': datetime.utcnow(), 'timedelta': timedelta}
 app = Flask(__name__)
-
-# === Unified uploads config (Render-ready) ===
-UPLOAD_DIR = os.getenv('UPLOAD_DIR', '/data/uploads')
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
-MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
-
-# Set defaults safely and ensure directory exists
-app.config.setdefault('UPLOAD_FOLDER', UPLOAD_DIR)
-app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
-@app.route('/uploads/<path:filename>')
-def serve_upload(filename):
-    upload_dir = app.config.get('UPLOAD_FOLDER', os.getenv('UPLOAD_DIR', '/data/uploads'))
-    full = os.path.join(upload_dir, filename)
-    if not os.path.isfile(full):
-        abort(404)
-    return send_from_directory(upload_dir, filename, conditional=True)
-
-
 app.context_processor(inject_time_helpers)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your-secret-key-change-in-production')
 
@@ -52,8 +32,16 @@ DB_PATH_WEBPANEL = os.path.join(BASE_DIR, 'shop_bot.db')
 db = DatabaseManager(DB_PATH_WEBPANEL)
 telegram_bot = TelegramBotIntegration()
 
+# Настройки загрузки файлов
+UPLOAD_FOLDER = 'static/uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
 
-inventory_manager = InventoryManager(db)
+app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), UPLOAD_FOLDER)
+app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
+
+# Создаем папку для загрузок
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -290,7 +278,7 @@ def add_product():
                 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
                 file.save(file_path)
                 # Абсолютный URL, чтобы Telegram мог скачать
-                image_url = url_for('serve_upload', filename=filename, _external=True)
+                image_url = request.url_root.rstrip('/') + f"/static/uploads/{filename}"
         else:
             form_url = request.form.get('image_url', '').strip()
             if form_url:
@@ -355,7 +343,7 @@ def edit_product(product_id):
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
             file.save(file_path)
-            image_url = url_for('serve_upload', filename=filename, _external=True)
+            image_url = request.url_root.rstrip('/') + f"/static/uploads/{filename}"
 
         try:
             stock = int(request.form.get('stock', 0) or 0)
@@ -388,6 +376,10 @@ def edit_product(product_id):
     categories = db.get_categories()
     subs = db.get_subcategories_by_category(product[5]) if product[5] else []
     return render_template('edit_product.html', product=product, categories=categories or [], subcategories=subs)
+@app.route('/static/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
 @app.route('/categories')
 @login_required
 def categories():
@@ -648,7 +640,7 @@ def create_post():
                 filename = str(uuid.uuid4()) + '.' + file.filename.rsplit('.', 1)[1].lower()
                 file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 file.save(file_path)
-                image_url = url_for('serve_upload', filename=filename, _external=True)
+                image_url = request.url_root.rstrip('/') + f"/static/uploads/{filename}"
         elif request.form.get('image_url'):
             image_url = request.form['image_url']
         
@@ -695,7 +687,7 @@ def edit_post(post_id):
                 filename = str(uuid.uuid4()) + '.' + file.filename.rsplit('.', 1)[1].lower()
                 file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 file.save(file_path)
-                image_url = url_for('serve_upload', filename=filename, _external=True)
+                image_url = request.url_root.rstrip('/') + f"/static/uploads/{filename}"
         
         result = db.execute_query('''
             UPDATE scheduled_posts 
@@ -1861,3 +1853,11 @@ def toggle_subcategory(sid):
 
 @app.route('/subcategories/delete/<int:sid>', methods=['POST'])
 @login_required
+def delete_subcategory(sid):
+    db.execute_query('DELETE FROM subcategories WHERE id=?', (sid,))
+    telegram_bot.trigger_bot_data_reload()
+    flash('Подкатегория удалена')
+    return redirect(url_for('subcategories'))
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
