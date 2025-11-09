@@ -599,106 +599,178 @@ class TelegramShopBot:
         body_io.write(f"--{boundary}--{crlf}".encode("utf-8"))
         return content_type, body_io.getvalue()
 
+    
+    def _read_http_error_body(self, err):
+        """Возвращает текст ответа даже при HTTPError (например, 400), чтобы увидеть реальную ошибку Telegram."""
+        try:
+            import urllib.error
+            if isinstance(err, urllib.error.HTTPError) and err.read:
+                try:
+                    body = err.read().decode("utf-8", errors="replace")
+                    return body
+                except Exception:
+                    return ""
+        except Exception:
+            pass
+        return ""
+
     def _send_photo_file(self, chat_id, file_path, caption="", reply_markup=None):
-        import urllib.request
-        import json
+        import urllib.request, urllib.error, json, os, mimetypes
         url = f"{self.base_url}/sendPhoto"
         fields = {
             "chat_id": chat_id,
-            "caption": caption,
-            "parse_mode": "HTML",
         }
+        if caption:
+            fields["caption"] = caption
+            fields["parse_mode"] = "HTML"
         if reply_markup:
             import json as _json
             fields["reply_markup"] = _json.dumps(reply_markup)
+
         content_type, body = self._encode_multipart_formdata(fields, {"photo": file_path})
         req = urllib.request.Request(url, data=body, method='POST')
         req.add_header("Content-Type", content_type)
-        req.add_header("Content-Length", str(len(body)))
-        with urllib.request.urlopen(req) as response:
-            resp_text = response.read().decode("utf-8", errors="ignore")
-            try:
-                return json.loads(resp_text)
-            except Exception:
-                return {"ok": False, "result": None, "raw": resp_text}
-    
-    
+        try:
+            with urllib.request.urlopen(req) as resp:
+                resp_text = resp.read().decode('utf-8', errors='replace')
+                logger.info(f"[send_photo multipart] response: {resp_text[:240]}")
+                try:
+                    return json.loads(resp_text)
+                except Exception:
+                    return {"ok": False, "result": None, "raw": resp_text}
+        except Exception as e:
+            # Попробуем прочитать тело ошибки у Telegram
+            body_text = self._read_http_error_body(e)
+            if body_text:
+                logger.info(f"[send_photo multipart] HTTPError body: {body_text[:400]}")
+                try:
+                    obj = json.loads(body_text)
+                    return obj
+                except Exception:
+                    return {"ok": False, "error": str(e), "raw": body_text[:400]}
+            logger.info(f"[send_photo multipart] exception: {e}")
+            return {"ok": False, "error": str(e)}
     
     def send_photo(self, chat_id, photo_url, caption="", reply_markup=None):
-        """Отправка фото с расширенной диагностикой."""
-        import urllib.request, urllib.parse, json, os
-        logger.info(f"[send_photo] photo_url={photo_url!r}, caption_len={len(caption) if caption else 0}")
-        use_file = False
-        local_path = None
-        if photo_url and (not str(photo_url).startswith("http") or self._is_private_url(str(photo_url))):
-            local_path = self._map_url_to_local_path(str(photo_url))
-            logger.info(f"[send_photo] private/relative detected, mapped local_path={local_path}")
-            if local_path and os.path.exists(local_path):
-                use_file = True
-                try:
-                    size = os.path.getsize(local_path)
-                except Exception:
-                    size = -1
-                logger.info(f"[send_photo] will use multipart file, exists={True}, size={size}")
-            else:
-                logger.info(f"[send_photo] local file not found -> fallback to URL mode")
-        else:
-            logger.info("[send_photo] public URL mode")
-    
-        def _try_send(as_file: bool, cap: str):
-            if as_file and local_path:
-                logger.info(f"[send_photo] try multipart, caption_len={len(cap) if cap else 0}")
-                try:
-                    return self._send_photo_file(chat_id, local_path, cap, reply_markup)
-                except Exception as e:
-                    logger.info(f"[send_photo] multipart fail: {e}")
-                    return {"ok": False, "error": str(e)}
-            logger.info(f"[send_photo] try URL, caption_len={len(cap) if cap else 0}")
+        """Надёжная отправка фото:
+        1) Если http(s) URL — пробуем прямой URL в Telegram.
+        2) Если URL не принялся (failed to get HTTP URL content и т.п.) — качаем во временный файл и шлём multipart.
+        3) Если проблема в HTML (can't parse entities) — повторяем без parse_mode/без подписи.
+        4) Для локальных/приватных путей — сразу multipart.
+        Все ответы Telegram логируются (включая тело при 400), чтобы быстро понять причину.
+        """
+        import urllib.request, urllib.parse, urllib.error, json, os, tempfile
+        
+        def try_url(mode_caption: str, use_parse_mode: bool = True):
             url = f"{self.base_url}/sendPhoto"
             data = {
-                'chat_id': chat_id,
-                'photo': photo_url,
-                'caption': cap,
-                'parse_mode': 'HTML'
+                "chat_id": chat_id,
+                "photo": str(photo_url),
             }
+            if mode_caption:
+                data["caption"] = mode_caption
+                if use_parse_mode:
+                    data["parse_mode"] = "HTML"
             if reply_markup:
-                data['reply_markup'] = json.dumps(reply_markup)
+                data["reply_markup"] = json.dumps(reply_markup)
             try:
-                data_encoded = urllib.parse.urlencode(data).encode('utf-8')
-                req = urllib.request.Request(url, data=data_encoded, method='POST')
+                payload = urllib.parse.urlencode(data).encode("utf-8")
+                req = urllib.request.Request(url, data=payload, method="POST")
                 with urllib.request.urlopen(req) as response:
-                    response_text = response.read().decode('utf-8')
-                    logger.info(f"[send_photo] URL response: {response_text[:140]}")
-                    result = json.loads(response_text)
-                    return result
+                    response_text = response.read().decode("utf-8", errors="replace")
+                    logger.info(f"[send_photo URL] response: {response_text[:240]}")
+                    return json.loads(response_text)
             except Exception as e:
-                logger.info(f"[send_photo] URL fail: {e}")
+                body_text = self._read_http_error_body(e)
+                if body_text:
+                    logger.info(f"[send_photo URL] HTTPError body: {body_text[:400]}")
+                    try:
+                        return json.loads(body_text)
+                    except Exception:
+                        return {"ok": False, "error": str(e), "raw": body_text[:400]}
+                logger.info(f"[send_photo URL] fail: {e}")
                 return {"ok": False, "error": str(e)}
-    
-        res = _try_send(use_file, caption or "")
-        if isinstance(res, dict) and res.get('ok'):
-            logger.info("[send_photo] success on first attempt")
-            return res
-    
-        logger.info("[send_photo] fallback: retry without caption")
-        res2 = _try_send(use_file, "")
-        if isinstance(res2, dict) and res2.get('ok'):
-            logger.info("[send_photo] success on no-caption attempt")
-            return res2
-    
-        if not use_file:
-            local_path = self._map_url_to_local_path(str(photo_url))
-            if local_path and os.path.exists(local_path):
-                logger.info("[send_photo] final fallback: multipart without caption")
-                res3 = _try_send(True, "")
-                if isinstance(res3, dict) and res3.get('ok'):
-                    logger.info("[send_photo] success on final multipart fallback")
-                    return res3
-    
-        logger.info(f"[send_photo] failed. last responses: first={res}, second={res2 if 'res2' in locals() else None}")
-        return res2 if 'res2' in locals() else res
-    
         
+        def download_to_temp(src_url: str) -> str | None:
+            try:
+                tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
+                tmp.close()
+                urllib.request.urlretrieve(src_url, tmp.name)
+                return tmp.name
+            except Exception as e:
+                logger.info(f"[send_photo] download_to_temp fail: {e}")
+                return None
+
+        # 0) Определим режим: URL или локальный файл
+        is_http = isinstance(photo_url, str) and photo_url.lower().startswith(("http://", "https://"))
+        if not is_http or self._is_private_url(str(photo_url)):
+            # локальный/приватный — multipart сразу
+            local_path = self._map_url_to_local_path(str(photo_url)) or str(photo_url)
+            logger.info(f"[send_photo] multipart path={local_path}")
+            res = self._send_photo_file(chat_id, local_path, caption or "", reply_markup)
+            if res and res.get("ok"):
+                return res
+            # попробуем без подписи
+            if caption:
+                logger.info("[send_photo] retry multipart without caption")
+                res2 = self._send_photo_file(chat_id, local_path, "", reply_markup)
+                if res2 and res2.get("ok"):
+                    return res2
+            logger.info("[send_photo] multipart path failed")
+            return res
+
+        # 1) Пробуем прямой URL
+        logger.info(f"[send_photo] try URL first: {photo_url!r}, caption_len={len(caption) if caption else 0}")
+        r1 = try_url(caption or "", use_parse_mode=True)
+        if r1 and r1.get("ok"):
+            return r1
+
+        # 2) Если ошибка парсинга HTML — повторяем без parse_mode и/или без подписи
+        err_text = (json.dumps(r1) if isinstance(r1, dict) else str(r1)).lower()
+        if "can't parse entities" in err_text or "entities" in err_text:
+            logger.info("[send_photo] retry URL without parse_mode")
+            r1b = try_url(caption or "", use_parse_mode=False)
+            if r1b and r1b.get("ok"):
+                return r1b
+            if caption:
+                logger.info("[send_photo] retry URL without caption")
+                r1c = try_url("", use_parse_mode=False)
+                if r1c and r1c.get("ok"):
+                    return r1c
+
+        # 3) Если URL не принялся (не скачался у Telegram) — скачаем и отправим multipart
+        if isinstance(r1, dict):
+            raw = json.dumps(r1).lower()
+        else:
+            raw = str(r1).lower()
+        url_download_errors = ("failed to get http url content", "wrong file identifier/http url specified", "not found", "file is too big")
+        if any(tok in raw for tok in url_download_errors):
+            tmp_path = download_to_temp(str(photo_url))
+            if tmp_path and os.path.exists(tmp_path):
+                logger.info("[send_photo] fallback: multipart via downloaded temp file")
+                r2 = self._send_photo_file(chat_id, tmp_path, caption or "", reply_markup)
+                try:
+                    os.unlink(tmp_path)
+                except Exception:
+                    pass
+                if r2 and r2.get("ok"):
+                    return r2
+                if caption:
+                    logger.info("[send_photo] fallback: multipart via tmp without caption")
+                    r2b = self._send_photo_file(chat_id, tmp_path, "", reply_markup)
+                    if r2b and r2b.get("ok"):
+                        return r2b
+
+        # 4) Последняя попытка — повторить URL без подписи вообще
+        if caption:
+            logger.info("[send_photo] final retry: URL without caption")
+            r3 = try_url("", use_parse_mode=False)
+            if r3 and r3.get("ok"):
+                return r3
+
+        logger.info(f"[send_photo] failed. last responses: r1={r1}")
+        return r1
+
     def get_updates(self):
         """Получение обновлений"""
         url = f"{self.base_url}/getUpdates"
