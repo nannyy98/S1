@@ -1,13 +1,10 @@
-# -*- coding: utf-8 -*-
 """
-Обработчики сообщений для телеграм-бота (двуязычие RU/UZ).
-Совместим с существующими keyboards.py и utils.py.
+Обработчики сообщений для телеграм-бота
 """
 
 import logging
-from datetime import datetime
-
 from utils import validate_phone, validate_email
+from datetime import datetime
 from keyboards import (
     create_main_keyboard, create_categories_keyboard, create_subcategories_keyboard,
     create_products_keyboard, create_product_inline_keyboard, create_cart_keyboard,
@@ -15,12 +12,12 @@ from keyboards import (
     create_confirmation_keyboard, create_search_filters_keyboard,
     create_price_filter_keyboard, create_rating_keyboard,
     create_order_details_keyboard, create_language_keyboard,
-    create_payment_methods_keyboard, create_cart_item_keyboard,
-    create_product_inline_keyboard_with_qty, create_address_location_keyboard,
-    create_contact_request_keyboard, create_contact_inline_keyboard
+    create_payment_methods_keyboard, create_cart_item_keyboard
 )
+from keyboards import create_product_inline_keyboard_with_qty
 from utils import (
-    format_price, format_date, truncate_text, create_pagination_keyboard, escape_html,
+    format_price, format_date, validate_email, validate_phone,
+    truncate_text, create_pagination_keyboard, escape_html,
     calculate_cart_total, format_cart_summary, get_order_status_emoji,
     get_order_status_text, create_product_card, create_stars_display
 )
@@ -28,33 +25,6 @@ from localization import t, get_user_language
 from payments import PaymentProcessor, create_payment_keyboard, format_payment_info
 
 logger = logging.getLogger(__name__)
-
-CATALOG_BTNS = {'🛍 Каталог', '🛍 Katalog', '🛍 Перейти в каталог'}
-BACK_TO_CATEGORIES_BTNS = {'🔙 К категориям'}
-CART_BTNS = {'🛒 Корзина', '🛒 Savat'}
-ORDERS_BTNS = {'📋 Мои заказы', '📋 Mening buyurtmalarim'}
-PROFILE_BTNS = {'👤 Профиль', '👤 Profil'}
-SEARCH_BTNS = {'🔍 Поиск', '🔍 Qidiruv'}
-SELLER_BTNS = {'🧑‍💼 Стать продавцом', "🧑‍💼 Sotuvchi bo'lish"}
-HELP_BTNS = {'ℹ️ Помощь', 'ℹ️ Yordam'}
-CONTACT_BTNS = {'📞 Связаться с нами', "📞 Biz bilan bog'lanish"}
-HOME_BTNS = {'🔙 Главная', '🏠 Главная', '🏠 Bosh sahifa'}
-
-CHECKOUT_BTNS = {'📦 Оформить заказ'}
-CART_CLEAR_BTNS = {'🗑 Очистить корзину'}
-ADD_ITEMS_BTNS = {'➕ Добавить товары', '🛍 Перейти в каталог'}
-
-CASH_BTNS = {'💵 Наличными при получении', '💵 Qabul qilishda naqd'}
-CARD_BTNS = {'💳 Оплата картой', '💳 Kartadan toʻlov'}
-
-YES_BTNS = {'✅ Да'}
-NO_BTNS = {'❌ Нет'}
-CANCEL_BTNS = {'❌ Отмена'}
-BACK_BTN_TEXTS = {'🔙 Назад', '🔙 Orqaga'}
-
-def L(lang: str, ru: str, uz: str = None) -> str:
-    return uz if lang == 'uz' and uz is not None else ru
-
 
 class MessageHandler:
     def __init__(self, bot, db):
@@ -88,8 +58,8 @@ class MessageHandler:
     
     def handle_message(self, message):
         """Главный обработчик сообщений"""
-        try:
-            text = message.get('text', '')
+    try:
+text = message.get('text', '')
             chat_id = message['chat']['id']
             telegram_id = message['from']['id']
             
@@ -624,8 +594,8 @@ Biz doimo yordam berishga tayyormiz! 🤝
     def show_product_details(self, chat_id, product):
         logger.info(f"[show_product_details] product_id={product[0]}, image_url={product[7]!r}, cat={product[4]}, subcat={product[5]}")
         """Показ деталей товара"""
-        try:
-            # Увеличиваем счетчик просмотров
+    try:
+# Увеличиваем счетчик просмотров
             self.db.increment_product_views(product[0])
 
             # Получаем отзывы и среднюю оценку
@@ -1171,9 +1141,8 @@ Biz doimo yordam berishga tayyormiz! 🤝
             text = message.get('text', '')
             chat_id = message['chat']['id']
             telegram_id = message['from']['id']
-
-            try:
-                order_id = int(text.split('_')[1])
+    try:
+order_id = int(text.split('_')[1])
 
                 # Проверяем принадлежность заказа пользователю
                 user_data = self.db.get_user_by_telegram_id(telegram_id)
@@ -1223,9 +1192,8 @@ Biz doimo yordam berishga tayyormiz! 🤝
             """Обработка команды отслеживания"""
             text = message.get('text', '')
             chat_id = message['chat']['id']
-
-            try:
-                tracking_number = text.split('_')[1]
+    try:
+tracking_number = text.split('_')[1]
 
                 # Получаем информацию о доставке
                 if hasattr(self.bot, 'logistics_manager'):
@@ -1256,9 +1224,8 @@ Biz doimo yordam berishga tayyormiz! 🤝
             text = message.get('text', '')
             chat_id = message['chat']['id']
             telegram_id = message['from']['id']
-
-            try:
-                promo_code = text.split('_')[1].upper()
+    try:
+promo_code = text.split('_')[1].upper()
 
                 user_data = self.db.get_user_by_telegram_id(telegram_id)
                 if not user_data:
@@ -1299,9 +1266,8 @@ Biz doimo yordam berishga tayyormiz! 🤝
             """Обработка команды восстановления заказа"""
             text = message.get('text', '')
             chat_id = message['chat']['id']
-
-            try:
-                restore_id = text.split('_')[1]
+    try:
+restore_id = text.split('_')[1]
 
                 restore_text = f"💾 <b>Восстановление заказа</b>\n\n"
                 restore_text += f"🔍 ID для восстановления: {restore_id}\n\n"
@@ -1349,8 +1315,8 @@ Biz doimo yordam berishga tayyormiz! 🤝
 
     def handle_callback_query(self, callback_query):
             """Обработка callback запросов"""
-            try:
-                data = callback_query['data']
+    try:
+data = callback_query['data']
                 chat_id = callback_query['message']['chat']['id']
                 telegram_id = callback_query['from']['id']
 
@@ -1424,53 +1390,64 @@ Biz doimo yordam berishga tayyormiz! 🤝
                 logger.error(f"Ошибка обработки callback: {e}")
 
     def handle_add_to_cart(self, callback_query):
-            """Добавление товара в корзину"""
-            data = callback_query['data']
-            chat_id = callback_query['message']['chat']['id']
-            telegram_id = callback_query['from']['id']
 
-            try:
-                product_id = int(data.split('_')[3])
+data = callback_query['data']
+chat_id = callback_query['message']['chat']['id']
+telegram_id = callback_query['from']['id']
 
-                user_data = self.db.get_user_by_telegram_id(telegram_id)
-                if not user_data:
-                    return
+# Extract product_id and qty from various formats
+parts = data.split('_')
+pid = None
+qty = 1
+for p in parts:
+    try:
+        num = int(p)
+        if pid is None:
+            pid = num
+        else:
+            if 1 <= num <= 9999:
+                qty = num
+            break
+    except ValueError:
+        continue
+if pid is None:
+    try:
+        pid = int(parts[-1])
+    except Exception:
+        pid = None
 
-                user_id = user_data[0][0]
+if not pid:
+    self.bot.send_message(chat_id, "❌ Ошибка добавления товара")
+    return
 
-                # Добавляем в корзину
-                result = self.db.add_to_cart(user_id, product_id, 1)
+user = self.db.get_user_by_telegram_id(telegram_id)
+if not user:
+    return
+user_id = user[0][0]
 
-                if result:
-                    product = self.db.get_product_by_id(product_id)
-                    success_text = f"✅ <b>{product[1]}</b> добавлен в корзину!"
+success = self.db.add_to_cart(user_id, pid, max(1, qty))
+if success:
+    product = self.db.get_product_by_id(pid)
+    title = product[1] if product else 'Товар'
+    self.bot.send_message(
+        chat_id,
+        f"✅ <b>{title}</b> добавлен в корзину (×{max(1, qty)})!",
+        {'inline_keyboard': [[
+            {'text': '🛒 Перейти в корзину', 'callback_data': 'go_to_cart'},
+            {'text': '🛍 Продолжить покупки', 'callback_data': 'back_to_categories'}
+        ]]}
+    )
+else:
+    self.bot.send_message(chat_id, "❌ Товар недоступен или закончился")
 
-                    # Показываем кнопку перехода в корзину
-                    cart_keyboard = {
-                        'inline_keyboard': [
-                            [
-                                {'text': '🛒 Перейти в корзину', 'callback_data': 'go_to_cart'},
-                                {'text': '🛍 Продолжить покупки', 'callback_data': 'back_to_categories'}
-                            ]
-                        ]
-                    }
-
-                    self.bot.send_message(chat_id, success_text, cart_keyboard)
-                else:
-                    self.bot.send_message(chat_id, "❌ Товар недоступен или закончился")
-
-            except (ValueError, IndexError) as e:
-                logger.error(f"Ошибка добавления в корзину: {e}")
-                self.bot.send_message(chat_id, "❌ Ошибка добавления товара")
 
     def handle_add_to_favorites(self, callback_query):
             """Добавление в избранное"""
             data = callback_query['data']
             chat_id = callback_query['message']['chat']['id']
             telegram_id = callback_query['from']['id']
-
-            try:
-                product_id = int(data.split('_')[3])
+    try:
+product_id = int(data.split('_')[3])
 
                 user_data = self.db.get_user_by_telegram_id(telegram_id)
                 if not user_data:
@@ -1494,9 +1471,8 @@ Biz doimo yordam berishga tayyormiz! 🤝
             """Показ отзывов о товаре"""
             data = callback_query['data']
             chat_id = callback_query['message']['chat']['id']
-
-            try:
-                product_id = int(data.split('_')[1])
+    try:
+product_id = int(data.split('_')[1])
 
                 reviews = self.db.get_product_reviews(product_id)
                 product = self.db.get_product_by_id(product_id)
@@ -1530,9 +1506,8 @@ Biz doimo yordam berishga tayyormiz! 🤝
             data = callback_query['data']
             chat_id = callback_query['message']['chat']['id']
             telegram_id = callback_query['from']['id']
-
-            try:
-                parts = data.split('_')
+    try:
+parts = data.split('_')
                 product_id = int(parts[1])
                 rating = int(parts[2])
 
@@ -1567,9 +1542,8 @@ Biz doimo yordam berishga tayyormiz! 🤝
             data = callback_query['data']
             chat_id = callback_query['message']['chat']['id']
             telegram_id = callback_query['from']['id']
-
-            try:
-                action = data.split('_')[1]
+    try:
+action = data.split('_')[1]
                 cart_item_id = int(data.split('_')[2])
 
                 if action == 'increase':
@@ -1605,8 +1579,8 @@ Biz doimo yordam berishga tayyormiz! 🤝
 
     def update_cart_message(self, callback_query, cart_item_id):
             """Обновление сообщения корзины"""
-            try:
-                new_quantity = self.get_cart_item_quantity(cart_item_id)
+    try:
+new_quantity = self.get_cart_item_quantity(cart_item_id)
                 new_keyboard = create_cart_item_keyboard(cart_item_id, new_quantity)
 
                 self.bot.edit_message_reply_markup(
@@ -1622,9 +1596,8 @@ Biz doimo yordam berishga tayyormiz! 🤝
             data = callback_query['data']
             chat_id = callback_query['message']['chat']['id']
             telegram_id = callback_query['from']['id']
-
-            try:
-                parts = data.split('_')
+    try:
+parts = data.split('_')
                 provider = parts[1]
                 order_id = int(parts[2])
 
@@ -1691,6 +1664,7 @@ Biz doimo yordam berishga tayyormiz! 🤝
             unknown_text += "• 🛍 Каталог - просмотр товаров"
 
             self.bot.send_message(chat_id, unknown_text, create_main_keyboard(lang))
+        
 def show_contacts(self, message):
     """Показать контакты: телефон, чат и информация"""
     chat_id = message['chat']['id']
