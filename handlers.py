@@ -604,15 +604,6 @@ Biz doimo yordam berishga tayyormiz! 🤝
 
             # Формируем карточку товара
             product_card = create_product_card(product)
-            # Добавим описание (если есть) и ограничим длину для подписи Telegram
-            try:
-                desc = (product[2] or '').strip()
-            except Exception:
-                desc = ''
-            if desc:
-                if len(desc) > 420:
-                    desc = desc[:417] + '…'
-                product_card += f\"{chr(10)}{chr(10)}{desc}\"
             if avg_rating > 0:
                 stars = create_stars_display(avg_rating)
                 product_card += f"⭐ Рейтинг: {stars} ({avg_rating:.1f}/5, {len(reviews)} отзывов)\n"
@@ -1023,7 +1014,7 @@ Biz doimo yordam berishga tayyormiz! 🤝
                 lang = self.db.get_user_by_telegram_id(telegram_id)[0][5]
             except Exception:
                 lang = 'ru'
-            self.bot.send_message(chat_id, '🧹 Savat tozalandi.' if lang=='uz' else '🧹 Корзина очищена.', create_main_keyboard(lang))
+            self.bot.send_message(chat_id, '🧹 Корзина очищена.', create_main_keyboard(lang))
             # сбрасываем возможные состояния подтверждения
             self.user_states.pop(telegram_id, None)
 
@@ -1397,8 +1388,7 @@ Biz doimo yordam berishga tayyormiz! 🤝
                 elif data.startswith('pay_'):
                     self.handle_payment_selection(callback_query)
                 elif data == 'cancel_payment':
-                    lang = get_user_language(telegram_id) if 'get_user_language' in globals() else 'ru'
-                    self.bot.send_message(chat_id, "❌ Toʻlov bekor qilindi" if lang=='uz' else "❌ Оплата отменена")
+                    self.bot.send_message(chat_id, "❌ Оплата отменена")
 
             except Exception as e:
                 logger.error(f"Ошибка обработки callback: {e}")
@@ -1410,9 +1400,7 @@ Biz doimo yordam berishga tayyormiz! 🤝
             telegram_id = callback_query['from']['id']
 
             try:
-                parts = data.split('_')
-                product_id = int(parts[3])
-                qty = int(parts[4]) if len(parts) > 4 and parts[4].isdigit() else 1
+                product_id = int(data.split('_')[3])
 
                 user_data = self.db.get_user_by_telegram_id(telegram_id)
                 if not user_data:
@@ -1421,15 +1409,11 @@ Biz doimo yordam berishga tayyormiz! 🤝
                 user_id = user_data[0][0]
 
                 # Добавляем в корзину
-                result = self.db.add_to_cart(user_id, product_id, qty)
+                result = self.db.add_to_cart(user_id, product_id, 1)
 
                 if result:
                     product = self.db.get_product_by_id(product_id)
-                    lang = user_data[0][5] if user_data and len(user_data[0])>5 and user_data[0][5] else 'ru'
-                    if lang == 'uz':
-                        success_text = f"✅ <b>{product[1]}</b> savatga qoʻshildi!"
-                    else:
-                        success_text = f"✅ <b>{product[1]}</b> добавлен в корзину!"
+                    success_text = f"✅ <b>{product[1]}</b> добавлен в корзину!"
 
                     # Показываем кнопку перехода в корзину
                     cart_keyboard = {
@@ -1443,13 +1427,11 @@ Biz doimo yordam berishga tayyormiz! 🤝
 
                     self.bot.send_message(chat_id, success_text, cart_keyboard)
                 else:
-                    lang = user_data[0][5] if user_data and len(user_data[0])>5 and user_data[0][5] else 'ru'
-                    self.bot.send_message(chat_id, "❌ Mahsulot mavjud emas" if lang=='uz' else "❌ Товар недоступен или закончился")
+                    self.bot.send_message(chat_id, "❌ Товар недоступен или закончился")
 
             except (ValueError, IndexError) as e:
                 logger.error(f"Ошибка добавления в корзину: {e}")
-                user_lang = user_data[0][5] if user_data and len(user_data[0])>5 and user_data[0][5] else 'ru'
-                self.bot.send_message(chat_id, "❌ Tovarni qoʻshishda xatolik" if user_lang=='uz' else "❌ Ошибка добавления товара")
+                self.bot.send_message(chat_id, "❌ Ошибка добавления товара")
 
     def handle_add_to_favorites(self, callback_query):
             """Добавление в избранное"""
@@ -1458,9 +1440,7 @@ Biz doimo yordam berishga tayyormiz! 🤝
             telegram_id = callback_query['from']['id']
 
             try:
-                parts = data.split('_')
-                product_id = int(parts[3])
-                qty = int(parts[4]) if len(parts) > 4 and parts[4].isdigit() else 1
+                product_id = int(data.split('_')[3])
 
                 user_data = self.db.get_user_by_telegram_id(telegram_id)
                 if not user_data:
