@@ -1,10 +1,13 @@
+# -*- coding: utf-8 -*-
 """
-Обработчики сообщений для телеграм-бота
+Обработчики сообщений для телеграм-бота (двуязычие RU/UZ).
+Совместим с существующими keyboards.py и utils.py.
 """
 
 import logging
-from utils import validate_phone, validate_email
 from datetime import datetime
+
+from utils import validate_phone, validate_email
 from keyboards import (
     create_main_keyboard, create_categories_keyboard, create_subcategories_keyboard,
     create_products_keyboard, create_product_inline_keyboard, create_cart_keyboard,
@@ -12,12 +15,12 @@ from keyboards import (
     create_confirmation_keyboard, create_search_filters_keyboard,
     create_price_filter_keyboard, create_rating_keyboard,
     create_order_details_keyboard, create_language_keyboard,
-    create_payment_methods_keyboard, create_cart_item_keyboard
+    create_payment_methods_keyboard, create_cart_item_keyboard,
+    create_product_inline_keyboard_with_qty, create_address_location_keyboard,
+    create_contact_request_keyboard, create_contact_inline_keyboard
 )
-from keyboards import create_product_inline_keyboard_with_qty
 from utils import (
-    format_price, format_date, validate_email, validate_phone,
-    truncate_text, create_pagination_keyboard, escape_html,
+    format_price, format_date, truncate_text, create_pagination_keyboard, escape_html,
     calculate_cart_total, format_cart_summary, get_order_status_emoji,
     get_order_status_text, create_product_card, create_stars_display
 )
@@ -25,6 +28,33 @@ from localization import t, get_user_language
 from payments import PaymentProcessor, create_payment_keyboard, format_payment_info
 
 logger = logging.getLogger(__name__)
+
+CATALOG_BTNS = {'🛍 Каталог', '🛍 Katalog', '🛍 Перейти в каталог'}
+BACK_TO_CATEGORIES_BTNS = {'🔙 К категориям'}
+CART_BTNS = {'🛒 Корзина', '🛒 Savat'}
+ORDERS_BTNS = {'📋 Мои заказы', '📋 Mening buyurtmalarim'}
+PROFILE_BTNS = {'👤 Профиль', '👤 Profil'}
+SEARCH_BTNS = {'🔍 Поиск', '🔍 Qidiruv'}
+SELLER_BTNS = {'🧑‍💼 Стать продавцом', "🧑‍💼 Sotuvchi bo'lish"}
+HELP_BTNS = {'ℹ️ Помощь', 'ℹ️ Yordam'}
+CONTACT_BTNS = {'📞 Связаться с нами', "📞 Biz bilan bog'lanish"}
+HOME_BTNS = {'🔙 Главная', '🏠 Главная', '🏠 Bosh sahifa'}
+
+CHECKOUT_BTNS = {'📦 Оформить заказ'}
+CART_CLEAR_BTNS = {'🗑 Очистить корзину'}
+ADD_ITEMS_BTNS = {'➕ Добавить товары', '🛍 Перейти в каталог'}
+
+CASH_BTNS = {'💵 Наличными при получении', '💵 Qabul qilishda naqd'}
+CARD_BTNS = {'💳 Оплата картой', '💳 Kartadan toʻlov'}
+
+YES_BTNS = {'✅ Да'}
+NO_BTNS = {'❌ Нет'}
+CANCEL_BTNS = {'❌ Отмена'}
+BACK_BTN_TEXTS = {'🔙 Назад', '🔙 Orqaga'}
+
+def L(lang: str, ru: str, uz: str = None) -> str:
+    return uz if lang == 'uz' and uz is not None else ru
+
 
 class MessageHandler:
     def __init__(self, bot, db):
