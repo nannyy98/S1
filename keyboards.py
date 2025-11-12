@@ -1,304 +1,374 @@
-import logging
+# -*- coding: utf-8 -*-
+"""
+Клавиатуры для телеграм-бота (RU/UZ)
+"""
 
-logger = logging.getLogger(__name__)
+# Минимальный локализатор для RU→UZ
+def _t(lang: str, ru: str) -> str:
+    if (lang or 'ru') != 'uz':
+        return ru
+    m = {
+        # Главная
+        '🛍 Каталог': '🛍 Katalog',
+        '🛒 Корзина': '🛒 Savat',
+        '📋 Мои заказы': '📋 Mening buyurtmalarim',
+        '👤 Профиль': '👤 Profil',
+        '🔍 Поиск': '🔍 Qidiruv',
+        'ℹ️ Помощь': 'ℹ️ Yordam',
+        '📞 Связаться с нами': "📞 Biz bilan bog'lanish",
+        '🧑‍💼 Стать продавцом': "🧑‍💼 Sotuvchi bo'lish",
+        '🔙 Назад': '🔙 Orqaga',
+        '🏠 Главная': '🏠 Bosh sahifa',
+        '🔙 Главная': '🔙 Bosh sahifa',
+        '🔙 К категориям': '🔙 Kategoriyalarga',
+        '🔙 К подкатегориям': '🔙 Subkategoriyalarga',
+        '🔙 Пользовательский режим': '🔙 Foydalanuvchi rejimi',
+        '🛍 Перейти в каталог': '🛍 Katalogga o‘tish',
+        '➕ Добавить товары': '➕ Tovarlar qo‘shish',
 
+        # Товар/карточки
+        '🛒 Добавить в корзину': "🛒 Savatchaga qo'shish",
+        '❤️ В избранное': '❤️ Sevimlilarga',
+        '📊 Отзывы': '📊 Fikrlar',
+        '⭐ Оценить': '⭐ Baholash',
+        '🗑 Удалить': "🗑 O'chirish",
+        'шт.': 'dona',
+        '📦 Оформить заказ': '📦 Buyurtma berish',
+        '🗑 Очистить корзину': '🗑 Savatni tozalash',
+
+        # Регистрация/общие действия
+        '📱 Поделиться номером': '📱 Raqamni ulashish',
+        '⏭ Пропустить': "⏭ O'tkazib yuborish",
+        '❌ Отмена': '❌ Bekor qilish',
+        '❌ Отмена заказа': '❌ Buyurtmani bekor qilish',
+        '✅ Да': '✅ Ha',
+        '❌ Нет': "❌ Yo'q",
+
+        # Оплата
+        '💳 Онлайн оплата': '💳 Onlayn to‘lov',
+        '💵 Наличными при получении': '💵 Qabul qilishda naqd',
+        '💳 Оплата картой': '💳 Kartadan to‘lov',
+
+        # Поиск/фильтры/сортировка
+        '💰 По цене ↑': '💰 Narx bo‘yicha ↑',
+        '💰 По цене ↓': '💰 Narx bo‘yicha ↓',
+        '🔥 Популярные': '🔥 Ommabop',
+        '🆕 Новинки': '🆕 Yangi',
+        '📊 Продаваемые': '📊 Sotiladiganlar',
+        '🔍 Сбросить фильтры': '🔍 Filtrlarni tiklash',
+
+        # Диапазоны цен
+        '💵 До $50': '💵 $50 gacha',
+        '💰 $50-100': '💰 $50-100',
+        '💎 $100-500': '💎 $100-500',
+        '👑 $500+': '👑 $500+',
+
+        # Рейтинг/оценки
+        '❌ Отмена': '❌ Bekor qilish',
+
+        # Заказы/детали
+        '📋 Детали заказа': '📋 Buyurtma tafsilotlari',
+        '📞 Связаться': '📞 Bog‘lanish',
+        '❌ Отменить заказ': '❌ Buyurtmani bekor qilish',
+
+        # Выбор языка
+        '🇷🇺 Русский': '🇷🇺 Русский',
+        "🇺🇿 O'zbekcha": "🇺🇿 O'zbekcha",
+
+        # Админ-панель
+        '📊 Статистика': '📊 Statistika',
+        '📦 Заказы': '📦 Buyurtmalar',
+        '🛠 Товары': '🛠 Tovarlar',
+        '👥 Пользователи': '👥 Foydalanuvchilar',
+        '📈 Аналитика': '📈 Analitika',
+        '🛡 Безопасность': '🛡 Xavfsizlik',
+        '💰 Финансы': '💰 Moliya',
+        '📦 Склад': '📦 Ombor',
+        '🤖 AI': '🤖 AI',
+        '🎯 Автоматизация': '🎯 Avtomatlashtirish',
+        '👥 CRM': '👥 CRM',
+        '📢 Рассылка': '📢 Xabarnoma',
+        '➕ Добавить товар': "➕ Tovar qo'shish",
+
+        # Аналитика/периоды
+        '📊 Продажи за период': '📊 Davr bo‘yicha savdo',
+        '👥 Поведение клиентов': '👥 Mijozlar xulqi',
+        '📈 ABC-анализ': '📈 ABC-tahlil',
+        '🎯 Воронка конверсии': '🎯 Konversiya voronkasi',
+        '💰 Прогноз выручки': '💰 Daromad prognozi',
+        '📦 Эффективность товаров': '📦 Tovarlar samaradorligi',
+        '📅 Сегодня': '📅 Bugun',
+        '📅 Вчера': '📅 Kecha',
+        '📅 Неделя': '📅 Hafta',
+        '📅 Месяц': '📅 Oy',
+        '📅 Квартал': '📅 Chorak',
+        '📅 Год': '📅 Yil',
+
+        # Контакты
+        '💬 Написать в чате': '💬 Chatda yozish',
+        '📞 Позвонить': '📞 Qo‘ng‘iroq qilish',
+    }
+    return m.get(ru, ru)
 
 def create_main_keyboard(language='ru'):
-    """Главное меню"""
+    """Главная клавиатура"""
     if language == 'uz':
-        keyboard = {
+        return {
             'keyboard': [
                 ['🛍 Katalog', '🛒 Savat'],
                 ['📋 Mening buyurtmalarim', '👤 Profil'],
-                ['🔍 Qidiruv', "🧑‍💼 Sotuvchi bo'lish"],
-                ['ℹ️ Yordam', "📞 Biz bilan bog'lanish"]
+                ['🔍 Qidiruv', 'ℹ️ Yordam'],
+                ["📞 Biz bilan bog'lanish"],
+                ["🧑‍💼 Sotuvchi bo'lish"]
             ],
-            'resize_keyboard': True
+            'resize_keyboard': True,
+            'one_time_keyboard': False
         }
     else:
-        keyboard = {
+        return {
             'keyboard': [
                 ['🛍 Каталог', '🛒 Корзина'],
                 ['📋 Мои заказы', '👤 Профиль'],
-                ['🔍 Поиск', '🧑‍💼 Стать продавцом'],
-                ['ℹ️ Помощь', '📞 Связаться с нами']
+                ['🔍 Поиск', 'ℹ️ Помощь'],
+                ['📞 Связаться с нами'],
+                ['🧑‍💼 Стать продавцом']
             ],
-            'resize_keyboard': True
+            'resize_keyboard': True,
+            'one_time_keyboard': False
         }
-    return keyboard
 
+def create_categories_keyboard(categories, language='ru'):
+    """Клавиатура с категориями"""
+    keyboard = []
+    for i in range(0, len(categories), 2):
+        row = [f"{categories[i][3]} {categories[i][1]}"]
+        if i + 1 < len(categories):
+            row.append(f"{categories[i + 1][3]} {categories[i + 1][1]}")
+        keyboard.append(row)
+    keyboard.append([_t(language, '🔙 К категориям'), _t(language, '🏠 Главная')])
+    return {'keyboard': keyboard, 'resize_keyboard': True, 'one_time_keyboard': False}
 
-def create_categories_keyboard(categories):
-    """Клавиатура категорий"""
-    keyboard = {'keyboard': [], 'resize_keyboard': True}
-    row = []
-    for cat in categories:
-        btn_text = f"{cat[2]} {cat[1]}" if cat[2] else cat[1]
-        row.append(btn_text)
-        if len(row) == 2:
-            keyboard['keyboard'].append(row)
-            row = []
-    if row:
-        keyboard['keyboard'].append(row)
-    keyboard['keyboard'].append(['🔙 Главная'])
-    return keyboard
-
-
-def create_subcategories_keyboard(subcategories, category_id=None):
-    """Клавиатура подкатегорий/брендов"""
-    keyboard = {'keyboard': [], 'resize_keyboard': True}
-    row = []
-    for sub in subcategories:
-        btn_text = f"{sub[3]} {sub[2]}" if sub[3] else sub[2]
-        row.append(btn_text)
-        if len(row) == 2:
-            keyboard['keyboard'].append(row)
-            row = []
-    if row:
-        keyboard['keyboard'].append(row)
-    keyboard['keyboard'].append(['🔙 К категориям'])
-    return keyboard
-
+def create_subcategories_keyboard(subcategories, language='ru'):
+    """Клавиатура с подкатегориями/брендами"""
+    keyboard = []
+    for i in range(0, len(subcategories), 2):
+        row = [f"{subcategories[i][2]} {subcategories[i][1]}"]
+        if i + 1 < len(subcategories):
+            row.append(f"{subcategories[i + 1][2]} {subcategories[i + 1][1]}")
+        keyboard.append(row)
+    keyboard.append([_t(language, '🔙 К категориям'), _t(language, '🏠 Главная')])
+    return {'keyboard': keyboard, 'resize_keyboard': True, 'one_time_keyboard': False}
 
 def create_products_keyboard(products, show_back=True, language='ru'):
-    """Клавиатура списка товаров"""
-    keyboard = {'keyboard': [], 'resize_keyboard': True}
+    """Клавиатура с товарами"""
+    keyboard = []
     for product in products:
-        name = product[1]
-        price = product[3]
-        btn_text = f"🛍 {name} - {price} so'm" if language == 'uz' else f"🛍 {name} - {price} ₽"
-        keyboard['keyboard'].append([btn_text])
-
+        keyboard.append([f"🛍 {product[1]} - ${product[3]:.2f}"])
     if show_back:
-        if language == 'uz':
-            keyboard['keyboard'].append(['🔙 Kategoriyalarga qaytish'])
-        else:
-            keyboard['keyboard'].append(['🔙 К категориям'])
-    return keyboard
-
-
-def create_product_inline_keyboard(product_id, category_id=None, subcategory_id=None, qty: int = 1):
-    """Инлайн-клавиатура товара"""
-    inline_keyboard = [
-        [
-            {'text': f'➕ Добавить в корзину (×{qty})', 'callback_data': f'add_to_cart_{product_id}_{qty}'}
-        ],
-        [
-            {'text': '❤️ В избранное', 'callback_data': f'add_to_favorites_product_{product_id}'}
-        ],
-        [
-            {'text': '📝 Отзывы', 'callback_data': f'reviews_{product_id}'}
-        ]
-    ]
-    if category_id:
-        inline_keyboard.append(
-            [{'text': '🔙 К подкатегориям', 'callback_data': f'back_to_category_{category_id}'}]
-        )
-    if subcategory_id:
-        inline_keyboard.append(
-            [{'text': '🔙 К товарам', 'callback_data': f'back_to_subcategory_{subcategory_id}'}]
-        )
-    return {'inline_keyboard': inline_keyboard}
-
-
-def create_cart_keyboard(has_items: bool, language='ru'):
-    """Клавиатура корзины"""
-    buttons = []
-
-    if has_items:
-        if language == 'uz':
-            buttons.append(['📦 Buyurtma berish'])
-            buttons.append(['🗑 Savatni tozalash', '🛍 Katalogga qaytish'])
-        else:
-            buttons.append(['📦 Оформить заказ'])
-            buttons.append(['🗑 Очистить корзину', '🛍 Перейти в каталог'])
+        keyboard.append([_t(language, '🔙 К категориям'), _t(language, '🏠 Главная')])
     else:
-        if language == 'uz':
-            buttons.append(['🛍 Katalogga o‘tish'])
-        else:
-            buttons.append(['🛍 Перейти в каталог'])
+        keyboard.append([_t(language, '🏠 Главная')])
+    return {'keyboard': keyboard, 'resize_keyboard': True, 'one_time_keyboard': False}
 
-    buttons.append(['🔙 Главная'] if language == 'ru' else ['🏠 Bosh sahifa'])
+def format_price(price):
+    """Форматирование цены для клавиатур"""
+    return f"${price:.2f}"
 
+def create_product_inline_keyboard(product_id, language='ru'):
+    """Inline клавиатура для товара"""
     return {
-        'keyboard': buttons,
-        'resize_keyboard': True
-    }
-
-
-def create_registration_keyboard(step, suggested_name=None):
-    """Клавиатура регистрации"""
-    keyboard = {'keyboard': [], 'resize_keyboard': True}
-
-    if step == 'name':
-        if suggested_name:
-            keyboard['keyboard'].append([suggested_name])
-        keyboard['keyboard'].append(['❌ Отмена'])
-    elif step == 'phone':
-        keyboard['keyboard'].append(['⏭ Пропустить'])
-        keyboard['keyboard'].append(['❌ Отмена'])
-    elif step == 'email':
-        keyboard['keyboard'].append(['⏭ Пропустить'])
-        keyboard['keyboard'].append(['❌ Отмена'])
-    elif step == 'language':
-        keyboard['keyboard'].append(['🇷🇺 Русский', "🇺🇿 O'zbekcha"])
-        keyboard['keyboard'].append(['❌ Отмена'])
-
-    return keyboard
-
-
-def create_order_keyboard(language='ru'):
-    """Клавиатура оформления заказа"""
-    if language == 'uz':
-        keyboard = {
-            'keyboard': [
-                ['💳 Kartadan toʻlov'],
-                ['💵 Qabul qilishda naqd'],
-                ['🔙 Bosh menyu']
-            ],
-            'resize_keyboard': True
-        }
-    else:
-        keyboard = {
-            'keyboard': [
-                ['💳 Оплата картой'],
-                ['💵 Наличными при получении'],
-                ['🔙 Главная']
-            ],
-            'resize_keyboard': True
-        }
-    return keyboard
-
-
-def create_back_keyboard(language='ru'):
-    """Клавиатура с кнопкой Назад/Главная"""
-    if language == 'uz':
-        keyboard = {
-            'keyboard': [
-                ['🏠 Bosh sahifa']
-            ],
-            'resize_keyboard': True
-        }
-    else:
-        keyboard = {
-            'keyboard': [
-                ['🏠 Главная']
-            ],
-            'resize_keyboard': True
-        }
-    return keyboard
-
-
-def create_confirmation_keyboard():
-    """Клавиатура подтверждения"""
-    keyboard = {
-        'keyboard': [
-            ['✅ Да', '❌ Нет']
-        ],
-        'resize_keyboard': True
-    }
-    return keyboard
-
-
-def create_search_filters_keyboard():
-    """Клавиатура фильтров поиска (пока заглушка)"""
-    keyboard = {
-        'inline_keyboard': [
-            [{'text': '💰 По цене', 'callback_data': 'filter_price'}],
-            [{'text': '⭐ По рейтингу', 'callback_data': 'filter_rating'}],
-            [{'text': '🔙 Назад', 'callback_data': 'back_to_search'}]
-        ]
-    }
-    return keyboard
-
-
-def create_price_filter_keyboard():
-    """Клавиатура фильтра цены (заглушка)"""
-    keyboard = {
-        'inline_keyboard': [
-            [{'text': '⬆ Дешевле', 'callback_data': 'price_asc'}],
-            [{'text': '⬇ Дороже', 'callback_data': 'price_desc'}],
-            [{'text': '🔙 Назад', 'callback_data': 'back_to_filters'}]
-        ]
-    }
-    return keyboard
-
-
-def create_rating_keyboard():
-    """Клавиатура выбора рейтинга"""
-    keyboard = {
-        'inline_keyboard': [
-            [{'text': '⭐', 'callback_data': 'rate_1'},
-             {'text': '⭐⭐', 'callback_data': 'rate_2'},
-             {'text': '⭐⭐⭐', 'callback_data': 'rate_3'},
-             {'text': '⭐⭐⭐⭐', 'callback_data': 'rate_4'},
-             {'text': '⭐⭐⭐⭐⭐', 'callback_data': 'rate_5'}]
-        ]
-    }
-    return keyboard
-
-
-def create_order_details_keyboard(order_id):
-    """Клавиатура деталей заказа"""
-    keyboard = {
-        'inline_keyboard': [
-            [{'text': '📦 Повторить заказ', 'callback_data': f'repeat_order_{order_id}'}],
-            [{'text': '❌ Отменить заказ', 'callback_data': f'cancel_order_{order_id}'}]
-        ]
-    }
-    return keyboard
-
-
-def create_language_keyboard():
-    """Клавиатура выбора языка"""
-    keyboard = {
-        'keyboard': [
-            ['🇷🇺 Русский', "🇺🇿 O'zbekcha"],
-            ['❌ Отмена']
-        ],
-        'resize_keyboard': True
-    }
-    return keyboard
-
-
-def create_payment_methods_keyboard(language='ru'):
-    """Клавиатура способов оплаты"""
-    if language == 'uz':
-        keyboard = {
-            'keyboard': [
-                ['💳 Kartadan toʻlov'],
-                ['💵 Qabul qilishda naqd'],
-                ['🔙 Bosh sahifa']
-            ],
-            'resize_keyboard': True
-        }
-    else:
-        keyboard = {
-            'keyboard': [
-                ['💳 Оплата картой'],
-                ['💵 Наличными при получении'],
-                ['🔙 Главная']
-            ],
-            'resize_keyboard': True
-        }
-    return keyboard
-
-
-def create_cart_item_keyboard(cart_item_id, quantity):
-    """Инлайн-клавиатура одного товара в корзине"""
-    keyboard = {
         'inline_keyboard': [
             [
-                {'text': '➖', 'callback_data': f'cart_decrease_{cart_item_id}'},
-                {'text': str(quantity), 'callback_data': 'noop'},
-                {'text': '➕', 'callback_data': f'cart_increase_{cart_item_id}'}
+                {'text': _t(language, '🛒 Добавить в корзину'), 'callback_data': f'add_to_cart_{product_id}'},
+                {'text': _t(language, '❤️ В избранное'), 'callback_data': f'add_to_favorites_{product_id}'}
             ],
             [
-                {'text': '🗑 Удалить', 'callback_data': f'cart_remove_{cart_item_id}'}
+                {'text': _t(language, '📊 Отзывы'), 'callback_data': f'reviews_{product_id}'},
+                {'text': _t(language, '⭐ Оценить'), 'callback_data': f'rate_product_{product_id}'}
             ]
         ]
     }
-    return keyboard
+
+def create_cart_keyboard(has_items=False, language='ru'):
+    """Клавиатура для корзины"""
+    keyboard = []
+    if has_items:
+        keyboard.extend([
+            [_t(language, '📦 Оформить заказ')],
+            [_t(language, '🗑 Очистить корзину'), _t(language, '➕ Добавить товары')]
+        ])
+    else:
+        keyboard.append([_t(language, '🛍 Перейти в каталог')])
+    keyboard.append([_t(language, '🏠 Главная')])
+    return {'keyboard': keyboard, 'resize_keyboard': True, 'one_time_keyboard': False}
+
+def create_registration_keyboard(step, suggested_value=None, language='ru'):
+    """Клавиатура для регистрации"""
+    keyboard = []
+    if step == 'name' and suggested_value:
+        keyboard.append([suggested_value])
+    elif step == 'phone':
+        keyboard.append([{ 'text': _t(language, '📱 Поделиться номером'), 'request_contact': True }])
+        keyboard.append([_t(language, '⏭ Пропустить')])
+    elif step == 'email':
+        keyboard.append([_t(language, '⏭ Пропустить')])
+    elif step == 'language':
+        keyboard.append(['🇷🇺 Русский', "🇺🇿 O'zbekcha"])
+    if step != 'language':  # не показываем отмену на последнем шаге
+        keyboard.append([_t(language, '❌ Отмена')])
+    return {'keyboard': keyboard, 'resize_keyboard': True, 'one_time_keyboard': True}
+
+def create_order_keyboard(language='ru'):
+    """Клавиатура для оформления заказа"""
+    return {
+        'keyboard': [
+            [_t(language, '💳 Онлайн оплата'), _t(language, '💵 Наличными при получении')],
+            [_t(language, '❌ Отмена заказа')]
+        ],
+        'resize_keyboard': True,
+        'one_time_keyboard': True
+    }
+
+def create_admin_keyboard(language='ru'):
+    """Клавиатура для администратора"""
+    return {
+        'keyboard': [
+            [_t(language, '📊 Статистика'), _t(language, '📦 Заказы')],
+            [_t(language, '🛠 Товары'), _t(language, '👥 Пользователи')],
+            [_t(language, '📈 Аналитика'), _t(language, '🛡 Безопасность')],
+            [_t(language, '💰 Финансы'), _t(language, '📦 Склад')],
+            [_t(language, '🤖 AI'), _t(language, '🎯 Автоматизация')],
+            [_t(language, '👥 CRM'), _t(language, '📢 Рассылка')],
+            [_t(language, '🔙 Пользовательский режим')]
+        ],
+        'resize_keyboard': True,
+        'one_time_keyboard': False
+    }
+
+def create_back_keyboard(language='ru'):
+    """Простая клавиатура 'Назад'"""
+    return {
+        'keyboard': [[_t(language, '🔙 Назад'), _t(language, '🏠 Главная')]],
+        'resize_keyboard': True,
+        'one_time_keyboard': False
+    }
+
+def create_confirmation_keyboard(language='ru'):
+    """Клавиатура подтверждения"""
+    return {
+        'keyboard': [[_t(language, '✅ Да'), _t(language, '❌ Нет')]],
+        'resize_keyboard': True,
+        'one_time_keyboard': True
+    }
+
+def create_search_filters_keyboard(language='ru'):
+    """Клавиатура для фильтров поиска"""
+    return {
+        'inline_keyboard': [
+            [
+                {'text': _t(language, '💰 По цене ↑'), 'callback_data': 'sort_price_low'},
+                {'text': _t(language, '💰 По цене ↓'), 'callback_data': 'sort_price_high'}
+            ],
+            [
+                {'text': _t(language, '🔥 Популярные'), 'callback_data': 'sort_popular'},
+                {'text': _t(language, '🆕 Новинки'), 'callback_data': 'sort_newest'}
+            ],
+            [
+                {'text': _t(language, '📊 Продаваемые'), 'callback_data': 'sort_sales'},
+                {'text': _t(language, '🔍 Сбросить фильтры'), 'callback_data': 'reset_filters'}
+            ]
+        ]
+    }
+
+def create_price_filter_keyboard(language='ru'):
+    """Клавиатура для фильтра по цене"""
+    return {
+        'inline_keyboard': [
+            [
+                {'text': _t(language, '💵 До $50'), 'callback_data': 'price_0_50'},
+                {'text': _t(language, '💰 $50-100'), 'callback_data': 'price_50_100'}
+            ],
+            [
+                {'text': _t(language, '💎 $100-500'), 'callback_data': 'price_100_500'}
+            ],
+            [
+                {'text': _t(language, '👑 $500+'), 'callback_data': 'price_500_plus'}
+            ],
+            [
+                {'text': _t(language, '🔙 Назад'), 'callback_data': 'back_to_search'}
+            ]
+        ]
+    }
+
+def create_rating_keyboard(product_id, language='ru'):
+    """Клавиатура для оценки товара"""
+    return {
+        'inline_keyboard': [
+            [
+                {'text': '⭐', 'callback_data': f'rate_{product_id}_1'},
+                {'text': '⭐⭐', 'callback_data': f'rate_{product_id}_2'},
+                {'text': '⭐⭐⭐', 'callback_data': f'rate_{product_id}_3'}
+            ],
+            [
+                {'text': '⭐⭐⭐⭐', 'callback_data': f'rate_{product_id}_4'},
+                {'text': '⭐⭐⭐⭐⭐', 'callback_data': f'rate_{product_id}_5'}
+            ],
+            [
+                {'text': _t(language, '❌ Отмена'), 'callback_data': 'cancel_rating'}
+            ]
+        ]
+    }
+
+def create_order_details_keyboard(order_id, language='ru'):
+    """Клавиатура для детального просмотра заказа"""
+    return {
+        'inline_keyboard': [
+            [
+                {'text': _t(language, '📋 Детали заказа'), 'callback_data': f'order_details_{order_id}'},
+                {'text': _t(language, '📞 Связаться'), 'callback_data': f'contact_about_{order_id}'}
+            ],
+            [
+                {'text': _t(language, '❌ Отменить заказ'), 'callback_data': f'cancel_order_{order_id}'}
+            ]
+        ]
+    }
+
+def create_language_keyboard(language='ru'):
+    """Клавиатура выбора языка"""
+    return {
+        'keyboard': [
+            ['🇷🇺 Русский', "🇺🇿 O'zbekcha"],
+            [_t(language, '❌ Отмена')]
+        ],
+        'resize_keyboard': True,
+        'one_time_keyboard': True
+    }
+
+def create_payment_methods_keyboard(language='ru'):
+    """Клавиатура способов оплаты (наличные/карта)"""
+    return {
+        'keyboard': [
+            [_t(language, '💵 Наличными при получении'), _t(language, '💳 Оплата картой')],
+            [_t(language, '❌ Отмена')]
+        ],
+        'resize_keyboard': True
+    }
+
+def create_cart_item_keyboard(cart_item_id, current_quantity, language='ru'):
+    """Клавиатура для управления товаром в корзине"""
+    qty_text = f'📦 {current_quantity} ' + (_t(language, 'шт.'))
+    return {
+        'inline_keyboard': [
+            [
+                {'text': '➖', 'callback_data': f'cart_decrease_{cart_item_id}'},
+                {'text': qty_text, 'callback_data': f'cart_quantity_{cart_item_id}'},
+                {'text': '➕', 'callback_data': f'cart_increase_{cart_item_id}'}
+            ],
+            [
+                {'text': _t(language, '🗑 Удалить'), 'callback_data': f'cart_remove_{cart_item_id}'}
+            ]
+        ]
+    }
 
 def create_admin_products_keyboard(products, language='ru'):
     """Клавиатура для управления товарами админом"""
@@ -442,4 +512,3 @@ def create_contact_request_keyboard(lang=None):
         [ cancel_text ]
     ]
     return {'keyboard': keyboard, 'resize_keyboard': True, 'one_time_keyboard': True}
-
