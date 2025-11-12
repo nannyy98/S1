@@ -118,7 +118,7 @@ class MessageHandler:
                 self.handle_contact_request(message, user_language)
             elif text == '🔙 Главная' or text == '🏠 Главная' or text == '🏠 Bosh sahifa':
                 self.show_main_menu(message)
-            elif text == '🌍 Сменить язык':
+            elif text == ['🌍 Сменить язык', '🌍 Tilni o'zgartirish']:
                 self.start_language_change(message)
             
             # Обрабатываем выбор категории
@@ -138,15 +138,15 @@ class MessageHandler:
                 self.handle_search_query(message)
             
             # Обрабатываем оформление заказа
-            elif text == '📦 Оформить заказ':
+            elif text == ['📦 Оформить заказ', '📦 Buyurtma bering']:
                 self.start_order_process(message)
             elif text in ['💳 Оплата картой', '💳 Kartadan toʻlov', '💵 Наличными при получении', '💵 Qabul qilishda naqd']:
                 self.handle_payment_method_selection(message)
             
             # Обрабатываем управление корзиной
-            elif text == '🗑 Очистить корзину':
+            elif text == ['🗑 Очистить корзину', '🗑 Savatni tozalash']:
                 self.clear_user_cart(message)
-            elif text == '➕ Добавить товары' or text == '🛍 Перейти в каталог':
+            elif text == ['➕ Добавить товары' '➕ Mahsulotlar qo'shish'] or text == '🛍 Перейти в каталог':
                 self.show_catalog(message)
             
             # Неизвестная команда
