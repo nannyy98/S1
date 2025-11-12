@@ -772,14 +772,14 @@ CREATE TABLE IF NOT EXISTS post_statistics (
         return result[0] if result else None
     
     def add_to_cart(self, user_id, product_id, quantity=1):
-    """Добавление товара в корзину. Возвращает cart_id при успехе, иначе None."""
-    logging.info(f"DEBUG: add_to_cart вызван с user_id={user_id}, product_id={product_id}, quantity={quantity}")
+     """Добавление товара в корзину. Возвращает cart_id при успехе, иначе None."""
+     logging.info(f"DEBUG: add_to_cart вызван с user_id={user_id}, product_id={product_id}, quantity={quantity}")
 
-    try:
+     try:
         with self.conn:  # автокоммит
             cur = self.conn.cursor()
 
-            # 1) Проверяем товар/остаток
+            # 1) Проверяем товар и остаток
             cur.execute('SELECT stock FROM products WHERE id = ? AND is_active = 1', (product_id,))
             row = cur.fetchone()
             logging.info(f"DEBUG: Товар в базе: {row}")
@@ -788,10 +788,9 @@ CREATE TABLE IF NOT EXISTS post_statistics (
                 return None
 
             stock = int(row[0] or 0)
-            if quantity < 1:
-                quantity = 1
+            quantity = max(1, int(quantity))
 
-            # 2) Смотрим, есть ли уже позиция в корзине
+            # 2) Проверяем позицию в корзине
             cur.execute(
                 'SELECT id, quantity FROM cart WHERE user_id = ? AND product_id = ?',
                 (user_id, product_id)
@@ -813,29 +812,29 @@ CREATE TABLE IF NOT EXISTS post_statistics (
                         (new_qty, cart_id)
                     )
                 except Exception:
-                    # если колонки updated_at нет
+                    # если нет updated_at
                     cur.execute('UPDATE cart SET quantity = ? WHERE id = ?', (new_qty, cart_id))
 
                 logging.info("DEBUG: Количество обновлено")
                 return cart_id
 
-            else:
-                # 4) Вставляем новую позицию
-                if quantity > stock:
-                    logging.info(f"DEBUG: Запрошено {quantity}, но на складе {stock}")
-                    return None
+            # 4) Вставляем новую позицию
+            if quantity > stock:
+                logging.info(f"DEBUG: Запрошено {quantity}, но на складе {stock}")
+                return None
 
-                cur.execute(
-                    'INSERT INTO cart (user_id, product_id, quantity) VALUES (?, ?, ?)',
-                    (user_id, product_id, quantity)
-                )
-                cart_id = cur.lastrowid
-                logging.info(f"DEBUG: Добавление нового товара в корзину: cart_id={cart_id}")
-                return cart_id
+            cur.execute(
+                'INSERT INTO cart (user_id, product_id, quantity) VALUES (?, ?, ?)',
+                (user_id, product_id, quantity)
+            )
+            cart_id = cur.lastrowid
+            logging.info(f"DEBUG: Добавление нового товара в корзину: cart_id={cart_id}")
+            return cart_id
 
     except Exception as e:
         logging.exception(f"add_to_cart error: {e}")
         return None
+
 
     
     def get_cart_items(self, user_id):
