@@ -114,7 +114,7 @@ class MessageHandler:
                 self.start_seller_application(message)
             elif text in ['ℹ️ Помощь', 'ℹ️ Yordam']:
                 self.handle_help_command(message, user_language)
-            elif text in ['📞 Связаться с нами', '📞 Biz bilan bog\'lanish']:
+            elif text in ['📞 Связаться с нами', '📞 Biz bilan bog'lanish']:
                 self.handle_contact_request(message, user_language)
             elif text == '🔙 Главная' or text == '🏠 Главная' or text == '🏠 Bosh sahifa':
                 self.show_main_menu(message)
@@ -594,8 +594,8 @@ Biz doimo yordam berishga tayyormiz! 🤝
     def show_product_details(self, chat_id, product):
         logger.info(f"[show_product_details] product_id={product[0]}, image_url={product[7]!r}, cat={product[4]}, subcat={product[5]}")
         """Показ деталей товара"""
-    try:
-# Увеличиваем счетчик просмотров
+        try:
+            # Увеличиваем счетчик просмотров
             self.db.increment_product_views(product[0])
 
             # Получаем отзывы и среднюю оценку
@@ -1141,8 +1141,9 @@ Biz doimo yordam berishga tayyormiz! 🤝
             text = message.get('text', '')
             chat_id = message['chat']['id']
             telegram_id = message['from']['id']
-    try:
-order_id = int(text.split('_')[1])
+
+            try:
+                order_id = int(text.split('_')[1])
 
                 # Проверяем принадлежность заказа пользователю
                 user_data = self.db.get_user_by_telegram_id(telegram_id)
@@ -1192,8 +1193,9 @@ order_id = int(text.split('_')[1])
             """Обработка команды отслеживания"""
             text = message.get('text', '')
             chat_id = message['chat']['id']
-    try:
-tracking_number = text.split('_')[1]
+
+            try:
+                tracking_number = text.split('_')[1]
 
                 # Получаем информацию о доставке
                 if hasattr(self.bot, 'logistics_manager'):
@@ -1224,8 +1226,9 @@ tracking_number = text.split('_')[1]
             text = message.get('text', '')
             chat_id = message['chat']['id']
             telegram_id = message['from']['id']
-    try:
-promo_code = text.split('_')[1].upper()
+
+            try:
+                promo_code = text.split('_')[1].upper()
 
                 user_data = self.db.get_user_by_telegram_id(telegram_id)
                 if not user_data:
@@ -1266,8 +1269,9 @@ promo_code = text.split('_')[1].upper()
             """Обработка команды восстановления заказа"""
             text = message.get('text', '')
             chat_id = message['chat']['id']
-    try:
-restore_id = text.split('_')[1]
+
+            try:
+                restore_id = text.split('_')[1]
 
                 restore_text = f"💾 <b>Восстановление заказа</b>\n\n"
                 restore_text += f"🔍 ID для восстановления: {restore_id}\n\n"
@@ -1315,8 +1319,8 @@ restore_id = text.split('_')[1]
 
     def handle_callback_query(self, callback_query):
             """Обработка callback запросов"""
-    try:
-data = callback_query['data']
+            try:
+                data = callback_query['data']
                 chat_id = callback_query['message']['chat']['id']
                 telegram_id = callback_query['from']['id']
 
@@ -1390,64 +1394,53 @@ data = callback_query['data']
                 logger.error(f"Ошибка обработки callback: {e}")
 
     def handle_add_to_cart(self, callback_query):
+            """Добавление товара в корзину"""
+            data = callback_query['data']
+            chat_id = callback_query['message']['chat']['id']
+            telegram_id = callback_query['from']['id']
 
-data = callback_query['data']
-chat_id = callback_query['message']['chat']['id']
-telegram_id = callback_query['from']['id']
+            try:
+                product_id = int(data.split('_')[3])
 
-# Extract product_id and qty from various formats
-parts = data.split('_')
-pid = None
-qty = 1
-for p in parts:
-    try:
-        num = int(p)
-        if pid is None:
-            pid = num
-        else:
-            if 1 <= num <= 9999:
-                qty = num
-            break
-    except ValueError:
-        continue
-if pid is None:
-    try:
-        pid = int(parts[-1])
-    except Exception:
-        pid = None
+                user_data = self.db.get_user_by_telegram_id(telegram_id)
+                if not user_data:
+                    return
 
-if not pid:
-    self.bot.send_message(chat_id, "❌ Ошибка добавления товара")
-    return
+                user_id = user_data[0][0]
 
-user = self.db.get_user_by_telegram_id(telegram_id)
-if not user:
-    return
-user_id = user[0][0]
+                # Добавляем в корзину
+                result = self.db.add_to_cart(user_id, product_id, 1)
 
-success = self.db.add_to_cart(user_id, pid, max(1, qty))
-if success:
-    product = self.db.get_product_by_id(pid)
-    title = product[1] if product else 'Товар'
-    self.bot.send_message(
-        chat_id,
-        f"✅ <b>{title}</b> добавлен в корзину (×{max(1, qty)})!",
-        {'inline_keyboard': [[
-            {'text': '🛒 Перейти в корзину', 'callback_data': 'go_to_cart'},
-            {'text': '🛍 Продолжить покупки', 'callback_data': 'back_to_categories'}
-        ]]}
-    )
-else:
-    self.bot.send_message(chat_id, "❌ Товар недоступен или закончился")
+                if result:
+                    product = self.db.get_product_by_id(product_id)
+                    success_text = f"✅ <b>{product[1]}</b> добавлен в корзину!"
 
+                    # Показываем кнопку перехода в корзину
+                    cart_keyboard = {
+                        'inline_keyboard': [
+                            [
+                                {'text': '🛒 Перейти в корзину', 'callback_data': 'go_to_cart'},
+                                {'text': '🛍 Продолжить покупки', 'callback_data': 'back_to_categories'}
+                            ]
+                        ]
+                    }
+
+                    self.bot.send_message(chat_id, success_text, cart_keyboard)
+                else:
+                    self.bot.send_message(chat_id, "❌ Товар недоступен или закончился")
+
+            except (ValueError, IndexError) as e:
+                logger.error(f"Ошибка добавления в корзину: {e}")
+                self.bot.send_message(chat_id, "❌ Ошибка добавления товара")
 
     def handle_add_to_favorites(self, callback_query):
             """Добавление в избранное"""
             data = callback_query['data']
             chat_id = callback_query['message']['chat']['id']
             telegram_id = callback_query['from']['id']
-    try:
-product_id = int(data.split('_')[3])
+
+            try:
+                product_id = int(data.split('_')[3])
 
                 user_data = self.db.get_user_by_telegram_id(telegram_id)
                 if not user_data:
@@ -1471,8 +1464,9 @@ product_id = int(data.split('_')[3])
             """Показ отзывов о товаре"""
             data = callback_query['data']
             chat_id = callback_query['message']['chat']['id']
-    try:
-product_id = int(data.split('_')[1])
+
+            try:
+                product_id = int(data.split('_')[1])
 
                 reviews = self.db.get_product_reviews(product_id)
                 product = self.db.get_product_by_id(product_id)
@@ -1506,8 +1500,9 @@ product_id = int(data.split('_')[1])
             data = callback_query['data']
             chat_id = callback_query['message']['chat']['id']
             telegram_id = callback_query['from']['id']
-    try:
-parts = data.split('_')
+
+            try:
+                parts = data.split('_')
                 product_id = int(parts[1])
                 rating = int(parts[2])
 
@@ -1542,8 +1537,9 @@ parts = data.split('_')
             data = callback_query['data']
             chat_id = callback_query['message']['chat']['id']
             telegram_id = callback_query['from']['id']
-    try:
-action = data.split('_')[1]
+
+            try:
+                action = data.split('_')[1]
                 cart_item_id = int(data.split('_')[2])
 
                 if action == 'increase':
@@ -1579,8 +1575,8 @@ action = data.split('_')[1]
 
     def update_cart_message(self, callback_query, cart_item_id):
             """Обновление сообщения корзины"""
-    try:
-new_quantity = self.get_cart_item_quantity(cart_item_id)
+            try:
+                new_quantity = self.get_cart_item_quantity(cart_item_id)
                 new_keyboard = create_cart_item_keyboard(cart_item_id, new_quantity)
 
                 self.bot.edit_message_reply_markup(
@@ -1596,8 +1592,9 @@ new_quantity = self.get_cart_item_quantity(cart_item_id)
             data = callback_query['data']
             chat_id = callback_query['message']['chat']['id']
             telegram_id = callback_query['from']['id']
-    try:
-parts = data.split('_')
+
+            try:
+                parts = data.split('_')
                 provider = parts[1]
                 order_id = int(parts[2])
 
@@ -1664,7 +1661,6 @@ parts = data.split('_')
             unknown_text += "• 🛍 Каталог - просмотр товаров"
 
             self.bot.send_message(chat_id, unknown_text, create_main_keyboard(lang))
-        
 def show_contacts(self, message):
     """Показать контакты: телефон, чат и информация"""
     chat_id = message['chat']['id']
