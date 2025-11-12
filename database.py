@@ -771,11 +771,11 @@ CREATE TABLE IF NOT EXISTS post_statistics (
         )
         return result[0] if result else None
     
-    def add_to_cart(self, user_id, product_id, quantity=1):
-     """Добавление товара в корзину. Возвращает cart_id при успехе, иначе None."""
-     logging.info(f"DEBUG: add_to_cart вызван с user_id={user_id}, product_id={product_id}, quantity={quantity}")
+def add_to_cart(self, user_id, product_id, quantity=1):
+    """Добавление товара в корзину. Возвращает cart_id при успехе, иначе None."""
+    logging.info(f"DEBUG: add_to_cart вызван с user_id={user_id}, product_id={product_id}, quantity={quantity}")
 
-     try:
+    try:
         with self.conn:  # автокоммит
             cur = self.conn.cursor()
 
@@ -834,6 +834,7 @@ CREATE TABLE IF NOT EXISTS post_statistics (
     except Exception as e:
         logging.exception(f"add_to_cart error: {e}")
         return None
+
 
 
     
