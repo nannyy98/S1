@@ -119,7 +119,7 @@ class MessageHandler:
             elif text == '🔙 Главная' or text == '🏠 Главная' or text == '🏠 Bosh sahifa':
                 self.show_main_menu(message)
             elif text == ['🌍 Сменить язык', '🌍 Tilni o'zgartirish']:
-                self.start_language_change(message)
+                self.start_language_change(message, user_language)
             
             # Обрабатываем выбор категории
             elif self._is_category_label(text):
