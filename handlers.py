@@ -59,7 +59,7 @@ class MessageHandler:
     def handle_message(self, message):
         """Главный обработчик сообщений"""
     try:
-text = message.get('text', '')
+            text = message.get('text', '')
             chat_id = message['chat']['id']
             telegram_id = message['from']['id']
             
