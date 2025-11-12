@@ -119,7 +119,7 @@ class MessageHandler:
             elif text == '🔙 Главная' or text == '🏠 Главная' or text == '🏠 Bosh sahifa':
                 self.show_main_menu(message)
             elif text == '🌍 Сменить язык':
-                self.start_language_change(message, user_language)
+                self.start_language_change(message)
             
             # Обрабатываем выбор категории
             elif self._is_category_label(text):
@@ -1393,54 +1393,45 @@ Biz doimo yordam berishga tayyormiz! 🤝
             except Exception as e:
                 logger.error(f"Ошибка обработки callback: {e}")
 
-   def handle_add_to_cart(self, callback_query):
-    """Добавление товара в корзину"""
-    data = callback_query['data']  # ожидаем: add_to_cart_<pid>_<qty>
-    chat_id = callback_query['message']['chat']['id']
-    telegram_id = callback_query['from']['id']
+    def handle_add_to_cart(self, callback_query):
+            """Добавление товара в корзину"""
+            data = callback_query['data']
+            chat_id = callback_query['message']['chat']['id']
+            telegram_id = callback_query['from']['id']
 
-    try:
-        parts = data.split('_')  # ["add","to","cart","<pid>","<qty>"]
-        product_id = int(parts[3])
-        qty = int(parts[4]) if len(parts) > 4 else 1
-        # серверная валидация как в клавиатуре
-        qty = max(1, min(20, qty))
+            try:
+                product_id = int(data.split('_')[3])
 
-        user_data = self.db.get_user_by_telegram_id(telegram_id)
-        if not user_data:
-            if 'id' in callback_query:
-                self.bot.answer_callback_query(callback_query['id'], text="⚠️ Сначала зарегистрируйтесь")
-            return
+                user_data = self.db.get_user_by_telegram_id(telegram_id)
+                if not user_data:
+                    return
 
-        user_id = user_data[0][0]
+                user_id = user_data[0][0]
 
-        # Передаём ФАКТИЧЕСКОЕ количество
-        result = self.db.add_to_cart(user_id, product_id, qty)
+                # Добавляем в корзину
+                result = self.db.add_to_cart(user_id, product_id, 1)
 
-        if result:
-            product = self.db.get_product_by_id(product_id)
-            title = (product[1] if product and len(product) > 1 else "Товар")
-            if 'id' in callback_query:
-                self.bot.answer_callback_query(callback_query['id'], text=f"Добавлено: {qty} шт.")
+                if result:
+                    product = self.db.get_product_by_id(product_id)
+                    success_text = f"✅ <b>{product[1]}</b> добавлен в корзину!"
 
-            cart_keyboard = {
-                'inline_keyboard': [
-                    [
-                        {'text': '🛒 Перейти в корзину', 'callback_data': 'go_to_cart'},
-                        {'text': '🛍 Продолжить покупки', 'callback_data': 'back_to_categories'}
-                    ]
-                ]
-            }
-            self.bot.send_message(chat_id, f"✅ <b>{title}</b> — {qty} шт. добавлено в корзину!", cart_keyboard)
-        else:
-            if 'id' in callback_query:
-                self.bot.answer_callback_query(callback_query['id'], text="❌ Товар недоступен")
-            self.bot.send_message(chat_id, "❌ Товар недоступен или закончился")
+                    # Показываем кнопку перехода в корзину
+                    cart_keyboard = {
+                        'inline_keyboard': [
+                            [
+                                {'text': '🛒 Перейти в корзину', 'callback_data': 'go_to_cart'},
+                                {'text': '🛍 Продолжить покупки', 'callback_data': 'back_to_categories'}
+                            ]
+                        ]
+                    }
 
-    except (ValueError, IndexError) as e:
-        logger.error(f"Ошибка добавления в корзину: {e}")
-        self.bot.send_message(chat_id, "❌ Ошибка добавления товара")
+                    self.bot.send_message(chat_id, success_text, cart_keyboard)
+                else:
+                    self.bot.send_message(chat_id, "❌ Товар недоступен или закончился")
 
+            except (ValueError, IndexError) as e:
+                logger.error(f"Ошибка добавления в корзину: {e}")
+                self.bot.send_message(chat_id, "❌ Ошибка добавления товара")
 
     def handle_add_to_favorites(self, callback_query):
             """Добавление в избранное"""
