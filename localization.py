@@ -34,6 +34,11 @@ class Localization:
                 'btn_search': '🔍 Поиск',
                 'btn_help': 'ℹ️ Помощь',
 
+                # Дополнительные кнопки (добавлено)
+                'btn_become_seller': '🧑‍💼 Стать продавцом',
+                'btn_contact': '📞 Связаться с нами',
+                'btn_change_language': '🌍 Сменить язык',
+
                 # Помощь
                 'help': """
 ℹ️ <b>Помощь по использованию бота</b>
@@ -130,6 +135,11 @@ Quyidagi menyudan amalni tanlang:
                 'btn_search': '🔍 Qidiruv',
                 'btn_help': 'ℹ️ Yordam',
 
+                # Дополнительные кнопки (добавлено)
+                'btn_become_seller': "🧑‍💼 Sotuvchi bo'lish",
+                'btn_contact': "📞 Biz bilan bog'lanish",
+                'btn_change_language': '🌍 Tilni o‘zgartirish',
+
                 # Помощь
                 'help': """
 ℹ️ <b>Botdan foydalanish bo'yicha yordam</b>
@@ -156,20 +166,20 @@ Barcha savollar bo'yicha administratorga murojaat qiling.
                 'btn_main': '🏠 Bosh sahifa',
                 'btn_cancel': '❌ Bekor qilish',
                 'btn_yes': '✅ Ha',
-                'btn_no': '❌ Yo\'q',
+                'btn_no': "❌ Yo'q",
                 
                 # Статусы заказов
                 'status_pending': '⏳ Qayta ishlanmoqda',
                 'status_confirmed': '✅ Tasdiqlangan',
-                'status_shipped': '🚚 Jo\'natilgan',
+                'status_shipped': "🚚 Jo'natilgan",
                 'status_delivered': '📦 Yetkazilgan',
                 'status_cancelled': '❌ Bekor qilingan',
                 
                 # Уведомления
                 'order_status_update': 'Buyurtma yangilanishi',
-                'payment_success_title': 'To\'lov muvaffaqiyatli o\'tdi!',
+                'payment_success_title': "To'lov muvaffaqiyatli o'tdi!",
                 'payment_confirmed': 'To\'lov tasdiqlandi',
-                'loyalty_points_earned': 'Ball qo\'shildi',
+                'loyalty_points_earned': "Ball qo'shildi",
                 'contact_soon': 'Tez orada siz bilan bog\'lanamiz',
                 
                 # Регистрация
@@ -194,7 +204,7 @@ Mahsulot qo'shish uchun katalogga o'ting!
                 """,
 
                 # Дополнительные переводы
-                'language_changed': '✅ Til muvaffaqiyatli o\'zgartirildi!'
+                'language_changed': "✅ Til muvaffaqiyatli o'zgartirildi!"
             }
         }
     
@@ -206,11 +216,11 @@ Mahsulot qo'shish uchun katalogga o'ting!
 localization = Localization()
 
 def get_user_language(db, telegram_id):
-    """Получение языка пользователя"""
+    """Получение языка пользователя (ожидает db и telegram_id)"""
     try:
         user_data = db.get_user_by_telegram_id(telegram_id)
         if user_data:
-            return user_data[0][5]  # language поле
+            return user_data[0][5]  # поле language
     except Exception:
         pass
     return 'ru'  # По умолчанию русский
